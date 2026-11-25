@@ -210,11 +210,9 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	username := strings.TrimSpace(r.FormValue("username"))
 	email := strings.TrimSpace(r.FormValue("email"))
 	password := r.FormValue("password")
-	role := strings.TrimSpace(r.FormValue("role"))
 
-	if role != "admin" {
-		role = "user"
-	}
+	// Owner-only admin policy: provisioned accounts are always standard users
+	role := "user"
 	if username == "" || email == "" || len(password) < 6 {
 		http.Redirect(w, r, "/admin?error=Provide+username,+email,+and+a+password+of+at+least+6+characters", http.StatusSeeOther)
 		return

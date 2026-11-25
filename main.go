@@ -224,6 +224,8 @@ func main() {
 		AdminLoginTemplate: adminLoginTmpl,
 		RegisterTemplate:   regTmpl,
 		JWTSecret:          cfg.JWTSecret,
+		AdminLoginPath:     cfg.AdminLoginPath,
+		AdminAccessKey:     cfg.AdminAccessKey,
 	}
 	dashH := handlers.NewDashboardHandler(database, dashTmpl, intelService, currencyService)
 	txnH := &handlers.TransactionHandler{DB: database, Templates: txnTmpl, CurrencyService: currencyService}
@@ -250,8 +252,9 @@ func main() {
 
 	r.HandleFunc("/login", authH.ShowLogin).Methods("GET")
 	r.HandleFunc("/login", authH.Login).Methods("POST")
-	r.HandleFunc("/admin/login", authH.ShowAdminLogin).Methods("GET")
-	r.HandleFunc("/admin/login", authH.AdminLogin).Methods("POST")
+	// Unlisted owner-only admin authentication route (configured via ADMIN_LOGIN_PATH)
+	r.HandleFunc(cfg.AdminLoginPath, authH.ShowAdminLogin).Methods("GET")
+	r.HandleFunc(cfg.AdminLoginPath, authH.AdminLogin).Methods("POST")
 	r.HandleFunc("/register", authH.ShowRegister).Methods("GET")
 	r.HandleFunc("/register", authH.Register).Methods("POST")
 	r.HandleFunc("/logout", authH.Logout).Methods("GET", "POST")
@@ -267,7 +270,6 @@ func main() {
 	adminRouter.HandleFunc("", adminH.Show).Methods("GET")
 	adminRouter.HandleFunc("/", adminH.Show).Methods("GET")
 	adminRouter.HandleFunc("/users/create", adminH.CreateUser).Methods("POST")
-	adminRouter.HandleFunc("/users/toggle-role", adminH.ToggleRole).Methods("POST")
 	adminRouter.HandleFunc("/users/toggle-status", adminH.ToggleStatus).Methods("POST")
 	adminRouter.HandleFunc("/users/delete", adminH.DeleteUser).Methods("POST")
 	adminRouter.HandleFunc("/settings", adminH.UpdatePlatformSettings).Methods("POST")

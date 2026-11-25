@@ -173,18 +173,27 @@ func (db *DB) ensureColumn(table, column, colDef string) error {
 	return err
 }
 
-// EnsureAdminAccount guarantees a default administrator exists on fresh installs.
+// EnsureAdminAccount strictly guarantees ONLY the single configured owner administrator exists.
 func (db *DB) EnsureAdminAccount(username, email, password string) error {
-	var count int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM users WHERE role = 'admin'`).Scan(&count); err == nil && count > 0 {
-		return nil
-	}
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
+
+	// Ensure no non-owner account holds admin privileges
+	_, _ = db.Exec(`UPDATE users SET role = 'user' WHERE role = 'admin' AND username != ? AND email != ?`, username, email)
+
+	var existingID int64
+	err = db.QueryRow(`SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1`, username, email).Scan(&existingID)
+	if err == nil && existingID > 0 {
+		_, err = db.Exec(`UPDATE users SET username = ?, email = ?, password = ?, role = 'admin', status = 'active' WHERE id = ?`,
+			username, email, string(hashed), existingID,
+		)
+		return err
+	}
+
 	res, err := db.Exec(`
-		INSERT OR IGNORE INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal)
+		INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal)
 		VALUES (?, ?, ?, 'admin', 'active', 'INR', 85000.0)`,
 		username, email, string(hashed),
 	)
@@ -193,7 +202,7 @@ func (db *DB) EnsureAdminAccount(username, email, password string) error {
 	}
 	if adminID, err := res.LastInsertId(); err == nil && adminID > 0 {
 		_ = db.SeedDefaults(adminID)
-		_, _ = db.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'system_bootstrap', 'Default platform administrator initialized (INR default)')`, adminID)
+		_, _ = db.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'system_bootstrap', 'Exclusive owner administrator account initialized')`, adminID)
 	}
 	return nil
 }

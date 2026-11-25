@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>{{.Title}}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,91 +12,76 @@
 </head>
 <body class="auth-body admin-auth-body">
     <div class="auth-split">
-        <!-- Admin Showcase Panel -->
         <section class="auth-showcase admin-showcase">
             <div class="showcase-top">
                 <div class="brand-logo">
                     <div class="logo-mark admin-logo-mark">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                     </div>
-                    <span class="brand-text">Pulse<span class="admin-accent">Admin</span></span>
+                    <span class="brand-text">Pulse<span class="admin-accent">Owner</span></span>
                 </div>
-                <span class="badge badge-warning">RESTRICTED ACCESS</span>
+                <span class="badge badge-warning">PRIVATE • OWNER ONLY</span>
             </div>
 
             <div class="showcase-hero">
-                <h1>Platform Governance &amp; Security Control Plane.</h1>
-                <p>Dedicated role-based administrator console for managing user accounts, RBAC permissions, global anomaly thresholds, system announcements, and real-time audit telemetry.</p>
+                <h1>Private Owner Control Plane.</h1>
+                <p>Unlisted, passkey-protected console exclusively for the platform owner. Invisible to regular users — manages user accounts, global announcements, risk thresholds, and platform audit logs.</p>
             </div>
 
             <div class="showcase-features">
                 <div class="showcase-feat">
-                    <span class="feat-icon">👥</span>
+                    <span class="feat-icon">🔑</span>
                     <div>
-                        <strong>User &amp; RBAC Lifecycle</strong>
-                        <span>Provision users, promote/demote admins &amp; suspend accounts instantly</span>
+                        <strong>3-Factor Owner Gate</strong>
+                        <span>Unlisted endpoint + Owner credentials + Constant-time Access Passkey</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
-                    <span class="feat-icon">📡</span>
+                    <span class="feat-icon">👻</span>
                     <div>
-                        <strong>Global Anomaly &amp; Audit Feed</strong>
-                        <span>Cross-tenant security events, login trails &amp; surge-spend radar</span>
-                    </div>
-                </div>
-                <div class="showcase-feat">
-                    <span class="feat-icon">⚙️</span>
-                    <div>
-                        <strong>Live Platform Controls</strong>
-                        <span>Broadcast banners, toggle signups &amp; tune global risk thresholds</span>
+                        <strong>Stealth Zero-Disclosure</strong>
+                        <span>Zero links on user pages; non-admin probes to /admin return HTTP 404</span>
                     </div>
                 </div>
             </div>
 
             <div class="showcase-footer">
-                <span>Protected by JWT Role Verification &amp; Bcrypt Auth</span>
+                <span>PulseMatrix Exclusive Owner Authentication</span>
             </div>
         </section>
 
-        <!-- Admin Auth Form Panel -->
         <section class="auth-panel">
             <div class="auth-card admin-auth-card">
-                <div class="portal-switcher">
-                    <a href="/login" class="portal-tab">👤 User Portal</a>
-                    <a href="/admin/login" class="portal-tab active admin-tab-active">🛡️ Admin Console</a>
-                </div>
-
                 <div class="auth-brand">
-                    <div class="admin-shield-pill">🔐 ELEVATED PRIVILEGES REQUIRED</div>
-                    <h2>Administrator Sign In</h2>
-                    <p class="auth-subtitle">Authenticate with a platform administrator account</p>
+                    <div class="admin-shield-pill">🔐 EXCLUSIVE OWNER ACCESS</div>
+                    <h2>Owner Sign In</h2>
+                    <p class="auth-subtitle">Enter your owner credentials and private access passkey</p>
                 </div>
 
                 {{if .Error}}
                 <div class="alert alert-danger">{{.Error}}</div>
                 {{end}}
 
-                <form action="/admin/login" method="POST" class="auth-form">
+                <form action="{{.AdminLoginPath}}" method="POST" class="auth-form">
                     <div class="form-group">
-                        <label>Admin Username or Email</label>
-                        <input type="text" name="username" class="form-control" placeholder="admin or admin@pulsematrix.ai" required autofocus>
+                        <label>Owner Username or Email</label>
+                        <input type="text" name="username" class="form-control" placeholder="Owner username or email" required autofocus>
                     </div>
 
                     <div class="form-group">
-                        <label>Administrator Password</label>
+                        <label>Owner Password</label>
                         <input type="password" name="password" class="form-control" placeholder="••••••••••••" required>
                     </div>
 
-                    <button type="submit" class="btn btn-admin btn-block btn-lg">Authenticate to Admin Console &rarr;</button>
-                </form>
+                    <div class="form-group">
+                        <label>Owner Access Passkey</label>
+                        <input type="password" name="access_key" class="form-control font-mono" placeholder="Private Owner Passkey" required>
+                    </div>
 
-                <div class="auth-footer">
-                    <span>Standard user account?</span>
-                    <a href="/login" class="link-accent">Go to User Login</a>
-                </div>
+                    <button type="submit" class="btn btn-admin btn-block btn-lg">Unlock Owner Console &rarr;</button>
+                </form>
             </div>
         </section>
     </div>
 </body>
 </html>
-

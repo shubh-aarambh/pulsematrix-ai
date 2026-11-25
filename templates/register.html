@@ -24,7 +24,7 @@
 
             <div class="showcase-hero">
                 <h1>Launch Your Personal Financial OS in 30 Seconds.</h1>
-                <p>Every new workspace comes pre-configured with smart categories, budget envelopes, savings goals, live FX conversion, CSV import/export, and your AI Financial Strategist.</p>
+                <p>Every workspace comes pre-configured with INR default formatting, 1-click multi-currency switching, smart category budgets, savings goals, 30-day spend heatmaps, CSV import/export, and AI insights.</p>
             </div>
 
             <div class="showcase-features">
@@ -32,30 +32,25 @@
                     <span class="feat-icon">⚡</span>
                     <div>
                         <strong>Zero Setup Friction</strong>
-                        <span>Pre-seeded sample ledger &amp; goals so you can explore immediately</span>
+                        <span>Ready-to-use ledger, goals &amp; UPI AutoPay radar right out of the box</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
                     <span class="feat-icon">🔒</span>
                     <div>
-                        <strong>Isolated User Ledger</strong>
-                        <span>Scoped categories, budgets, subscriptions &amp; private audit trails</span>
+                        <strong>Private Scoped Ledger</strong>
+                        <span>Your transactions, categories, budgets &amp; savings goals stay isolated</span>
                     </div>
                 </div>
             </div>
 
             <div class="showcase-footer">
-                <span>Free Forever Personal Tier • No Credit Card Needed</span>
+                <span>Free Personal Tier • No Credit Card Needed</span>
             </div>
         </section>
 
         <section class="auth-panel">
             <div class="auth-card">
-                <div class="portal-switcher">
-                    <a href="/login" class="portal-tab active">👤 User Portal</a>
-                    <a href="/admin/login" class="portal-tab">🛡️ Admin Console</a>
-                </div>
-
                 <div class="auth-brand">
                     <h2>Create Your Account</h2>
                     <p class="auth-subtitle">Initialize your PulseMatrix AI financial workspace</p>
@@ -69,12 +64,12 @@
                 <form action="/register" method="POST" class="auth-form">
                     <div class="form-group">
                         <label>Username</label>
-                        <input type="text" name="username" class="form-control" placeholder="e.g. alex_quant" required autofocus>
+                        <input type="text" name="username" class="form-control" placeholder="e.g. rohan_fin" required autofocus>
                     </div>
 
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" name="email" class="form-control" placeholder="alex@company.com" required>
+                        <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
                     </div>
 
                     <div class="form-group">
@@ -85,7 +80,7 @@
                     <button type="submit" class="btn btn-primary btn-block btn-lg">Create Workspace &rarr;</button>
                 </form>
                 {{else}}
-                <div class="alert alert-danger">New registrations are currently paused by the platform administrator.</div>
+                <div class="alert alert-danger">New registrations are currently paused.</div>
                 {{end}}
 
                 <div class="auth-footer">

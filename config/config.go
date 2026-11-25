@@ -18,10 +18,17 @@ type Config struct {
 	AdminUsername      string
 	AdminEmail         string
 	AdminPassword      string
+	AdminLoginPath     string
+	AdminAccessKey     string
 }
 
 func Load() *Config {
 	loadDotEnv(".env")
+
+	loginPath := strings.TrimSpace(getEnv("ADMIN_LOGIN_PATH", "/owner-portal"))
+	if !strings.HasPrefix(loginPath, "/") {
+		loginPath = "/" + loginPath
+	}
 
 	return &Config{
 		Port:               getEnv("PORT", "8080"),
@@ -32,9 +39,11 @@ func Load() *Config {
 		ExchangeRateAPIKey: getEnv("EXCHANGERATE_API_KEY", ""),
 		BaseCurrency:       getEnv("BASE_CURRENCY", "INR"),
 		EnableAIServices:   getEnv("ENABLE_AI_SERVICES", "true") == "true",
-		AdminUsername:      getEnv("ADMIN_USERNAME", "admin"),
-		AdminEmail:         getEnv("ADMIN_EMAIL", "admin@pulsematrix.ai"),
-		AdminPassword:      getEnv("ADMIN_PASSWORD", "Admin@2026"),
+		AdminUsername:      getEnv("ADMIN_USERNAME", "owner"),
+		AdminEmail:         getEnv("ADMIN_EMAIL", "owner@localhost"),
+		AdminPassword:      getEnv("ADMIN_PASSWORD", "ChangeMe@2026"),
+		AdminLoginPath:     loginPath,
+		AdminAccessKey:     getEnv("ADMIN_ACCESS_KEY", "change-me-passkey"),
 	}
 }
 

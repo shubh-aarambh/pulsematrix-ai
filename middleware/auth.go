@@ -16,7 +16,7 @@ const UserIDKey contextKey = "userID"
 const UsernameKey contextKey = "username"
 const RoleKey contextKey = "role"
 
-// Auth returns a Gorilla Mux middleware enforcing JWT authorization and live user status/role check.
+// Auth enforces JWT authorization and live account status/role check.
 func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +34,7 @@ func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 			}
 
 			if tokenStr == "" {
-				handleUnauth(w, r, "/login")
+				handleUnauth(w, r)
 				return
 			}
 
@@ -46,20 +46,20 @@ func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 			})
 
 			if err != nil || !token.Valid {
-				handleUnauth(w, r, "/login")
+				handleUnauth(w, r)
 				return
 			}
 
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
-				handleUnauth(w, r, "/login")
+				handleUnauth(w, r)
 				return
 			}
 
 			userIDFloat, ok1 := claims["sub"].(float64)
 			username, ok2 := claims["username"].(string)
 			if !ok1 || !ok2 {
-				handleUnauth(w, r, "/login")
+				handleUnauth(w, r)
 				return
 			}
 
@@ -70,7 +70,7 @@ func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 			if database != nil {
 				var dbUsername, dbRole, dbStatus string
 				if err := database.QueryRow(`SELECT username, role, status FROM users WHERE id = ?`, userID).Scan(&dbUsername, &dbRole, &dbStatus); err != nil {
-					handleUnauth(w, r, "/login")
+					handleUnauth(w, r)
 					return
 				}
 				username = dbUsername
@@ -90,9 +90,9 @@ func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 				})
 				if isAPIRequest(r) {
 					w.Header().Set("Content-Type", "application/json")
-					http.Error(w, `{"error":"Account suspended by administrator"}`, http.StatusForbidden)
+					http.Error(w, `{"error":"Account suspended"}`, http.StatusForbidden)
 				} else {
-					http.Redirect(w, r, "/login?error=Account+has+been+suspended+by+an+administrator", http.StatusSeeOther)
+					http.Redirect(w, r, "/login?error=Account+has+been+suspended", http.StatusSeeOther)
 				}
 				return
 			}
@@ -106,18 +106,14 @@ func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 	}
 }
 
-// RequireAdmin enforces that the authenticated user has the 'admin' role.
+// RequireAdmin enforces strict owner-only admin access and returns 404 Not Found
+// to any non-admin so the admin section remains completely invisible to regular users.
 func RequireAdmin() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role, _ := r.Context().Value(RoleKey).(string)
 			if role != "admin" {
-				if isAPIRequest(r) {
-					w.Header().Set("Content-Type", "application/json")
-					http.Error(w, `{"error":"Administrator access required"}`, http.StatusForbidden)
-				} else {
-					http.Redirect(w, r, "/admin/login?error=Administrator+privileges+required", http.StatusSeeOther)
-				}
+				http.NotFound(w, r)
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -125,17 +121,18 @@ func RequireAdmin() func(http.Handler) http.Handler {
 	}
 }
 
-func handleUnauth(w http.ResponseWriter, r *http.Request, redirectTo string) {
+func handleUnauth(w http.ResponseWriter, r *http.Request) {
+	// Stealth: never reveal /admin routes or redirect unauthenticated users to any admin login
+	if strings.HasPrefix(r.URL.Path, "/admin") {
+		http.NotFound(w, r)
+		return
+	}
 	if isAPIRequest(r) {
 		w.Header().Set("Content-Type", "application/json")
 		http.Error(w, `{"error":"Unauthorized access"}`, http.StatusUnauthorized)
 		return
 	}
-	if strings.HasPrefix(r.URL.Path, "/admin") {
-		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-		return
-	}
-	http.Redirect(w, r, redirectTo, http.StatusSeeOther)
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func isAPIRequest(r *http.Request) bool {

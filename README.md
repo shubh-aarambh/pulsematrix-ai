@@ -4,18 +4,18 @@
 [![Deploy to Render](https://img.shields.io/badge/Deploy%20to-Render-46E3B7?style=for-the-badge)](https://render.com/deploy?repo=https://github.com/shubh-aarambh/pulsematrix-ai)
 
 > **Live Deployment:** https://pulsematrix-ai.onrender.com (Health Check: https://pulsematrix-ai.onrender.com/health)
-> **Separate Portals:** User Login (`/login`) • Admin Console Login (`/admin/login`)
 >
-> A flagship, production-grade financial analytics and expense intelligence platform written in **Go**, featuring **separate Role-Based User & Admin Portals**, **Budgets & Savings Goals**, **Bulk CSV Import/Export**, **Live Multi-Currency FX Converter**, **`Ctrl+K` Command Palette**, **Dark/Light Theme**, autonomous receipt/SMS parsing with **Google Gemini AI**, statistical anomaly detection, and real-time payment app webhooks.
+> A flagship, production-grade financial analytics and expense intelligence platform written in **Go**, featuring **INR (`₹`) default + 1-click Live FX Swap (`₹`/`$`/`€`/`£`)**, **Carbon Blueprint Grid & Emerald Bento UI**, **30-Day Spend Heatmap**, **Smart Burn-Rate Forecast**, **Budgets & Savings Goals**, **Bulk CSV Import/Export**, **`Ctrl+K` Command Palette**, **Dark/Light Blueprint Theme**, autonomous receipt/SMS parsing with **Google Gemini AI**, and real-time UPI/bank webhooks.
 
 ---
 
-## ✨ Flagship v3.0 Features
+## ✨ Flagship v4.0 Features
 
-- **Separate User & Admin Portals (`/login` vs `/admin/login`):** Dedicated RBAC middleware enforcing admin-only access to the **Platform Admin Console (`/admin`)** with user provisioning, role promotion/demotion, account suspension, global announcement banners, dynamic anomaly thresholds, and cross-tenant audit logs.
+- **INR Default + 1-Click Live FX Swap:** Built INR-first (`₹1,85,000.00` formatting) with an instant topbar currency switcher (`₹ INR` | `$ USD` | `€ EUR` | `£ GBP`) that converts every card, table, budget, goal, and Chart.js graph using live exchange rates.
+- **Architectural Blueprint Grid & 12-Column Bento Dashboard:** Deep Carbon Obsidian grid with Neon Emerald & Cyber Cyan telemetry cards, **30-Day Spending Intensity Heatmap**, **Smart Burn-Rate & Month-End Forecast**, and **Upcoming Bills Countdown**.
 - **Budgets & Savings Goals Hub (`/goals`):** Real-time month-to-date category budget envelopes with over-budget guards, custom category builder, and personal savings goal milestones with live contribution tracking.
 - **Enhanced Ledger (`/transactions`):** Full inline transaction editing, one-click anomaly resolution ("Mark Safe"), multi-currency **Bulk CSV Statement Import** + downloadable CSV template, and full CSV ledger export.
-- **Executive UI/UX:** Split-screen glassmorphic auth portals, **Dark & Light theme toggle**, **`Ctrl+K` Quick Command Palette**, and a **Live Multi-Currency FX Converter** modal powered by `/api/currency/rates`.
+- **Stealth Owner-Only Governance:** Unlisted, env-configured private owner control plane protected by RBAC + constant-time access passkey — completely hidden from standard user interfaces.
 
 ---
 

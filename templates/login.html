@@ -20,51 +20,46 @@
                     </div>
                     <span class="brand-text">Pulse<span class="brand-accent">Matrix</span> AI</span>
                 </div>
-                <span class="badge badge-success">FLAGSHIP v4.0 • INR NATIVE</span>
+                <span class="badge badge-primary">v4.0 • INR LIVE FX</span>
             </div>
 
             <div class="showcase-hero">
                 <h1>Autonomous Financial Intelligence for Modern Spenders.</h1>
-                <p>Track every transaction across currencies, scan receipts &amp; bank SMS with AI, monitor category budgets &amp; savings goals, and catch billing anomalies before they drain your cashflow.</p>
+                <p>Track every transaction across INR &amp; global currencies, scan receipts &amp; UPI alerts with AI, monitor category budgets &amp; savings goals, and catch billing anomalies before they drain your cashflow.</p>
             </div>
 
             <div class="showcase-features">
                 <div class="showcase-feat">
                     <span class="feat-icon">🤖</span>
                     <div>
-                        <strong>AI Receipt &amp; SMS Parser</strong>
-                        <span>Ingest Google Pay, PhonePe, Apple Pay &amp; bank alerts in real time</span>
+                        <strong>AI Receipt &amp; UPI SMS Parser</strong>
+                        <span>Ingest Google Pay, PhonePe, Paytm, Apple Pay &amp; bank alerts in real time</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
                     <span class="feat-icon">🎯</span>
                     <div>
-                        <strong>Budgets &amp; Savings Goals</strong>
-                        <span>Live category envelopes, over-budget radar &amp; goal milestones</span>
+                        <strong>Budgets, Goals &amp; 30-Day Heatmap</strong>
+                        <span>Live category envelopes, daily burn forecast &amp; savings milestones</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
                     <span class="feat-icon">🌍</span>
                     <div>
-                        <strong>Live Multi-Currency FX Engine</strong>
-                        <span>Real-time USD, EUR, GBP, INR &amp; CAD normalization + CSV bulk import</span>
+                        <strong>INR Default + 1-Click Live FX Swap</strong>
+                        <span>Switch seamlessly between ₹ INR, $ USD, € EUR &amp; £ GBP + bulk CSV import</span>
                     </div>
                 </div>
             </div>
 
             <div class="showcase-footer">
-                <span>Go 1.23 • SQLite WAL • JWT RBAC • Gemini AI</span>
+                <span>PulseMatrix AI Financial Engine • Live Multi-Currency Analytics</span>
             </div>
         </section>
 
-        <!-- Auth Form Panel -->
+        <!-- Clean User-Only Auth Panel -->
         <section class="auth-panel">
             <div class="auth-card">
-                <div class="portal-switcher">
-                    <a href="/login" class="portal-tab active">👤 User Portal</a>
-                    <a href="/admin/login" class="portal-tab">🛡️ Admin Console</a>
-                </div>
-
                 <div class="auth-brand">
                     <h2>Welcome Back</h2>
                     <p class="auth-subtitle">Sign in to your personal financial command center</p>
@@ -80,7 +75,7 @@
                 <form action="/login" method="POST" class="auth-form">
                     <div class="form-group">
                         <label>Username or Email</label>
-                        <input type="text" name="username" class="form-control" placeholder="alex_quant or alex@company.com" required autofocus>
+                        <input type="text" name="username" class="form-control" placeholder="username or email@example.com" required autofocus>
                     </div>
 
                     <div class="form-group">
@@ -98,7 +93,7 @@
                 </div>
                 {{else}}
                 <div class="auth-footer">
-                    <span class="text-muted">Public registration is currently disabled by administrator.</span>
+                    <span class="text-muted">Public registration is currently paused.</span>
                 </div>
                 {{end}}
             </div>

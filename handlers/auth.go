@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -21,6 +22,8 @@ type AuthHandler struct {
 	AdminLoginTemplate *template.Template
 	RegisterTemplate   *template.Template
 	JWTSecret          string
+	AdminLoginPath     string
+	AdminAccessKey     string
 }
 
 func isHTTPS(r *http.Request) bool {
@@ -54,7 +57,7 @@ func (h *AuthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
 	settings := h.DB.GetSystemSettings()
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = h.LoginTemplate.Execute(w, map[string]interface{}{
-		"Title":             "User Sign In - PulseMatrix AI",
+		"Title":             "Sign In - PulseMatrix AI",
 		"Error":             r.URL.Query().Get("error"),
 		"Success":           r.URL.Query().Get("success"),
 		"AllowRegistration": settings.AllowRegistration,
@@ -73,7 +76,19 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = h.LoginTemplate.Execute(w, map[string]interface{}{
-			"Title":             "User Sign In - PulseMatrix AI",
+			"Title":             "Sign In - PulseMatrix AI",
+			"Error":             "Invalid username/email or password.",
+			"AllowRegistration": h.DB.GetSystemSettings().AllowRegistration,
+		})
+		return
+	}
+
+	// Owner admin must sign in via the private owner console URL (not the public user form)
+	if role == "admin" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = h.LoginTemplate.Execute(w, map[string]interface{}{
+			"Title":             "Sign In - PulseMatrix AI",
 			"Error":             "Invalid username/email or password.",
 			"AllowRegistration": h.DB.GetSystemSettings().AllowRegistration,
 		})
@@ -84,79 +99,70 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden)
 		_ = h.LoginTemplate.Execute(w, map[string]interface{}{
-			"Title":             "User Sign In - PulseMatrix AI",
-			"Error":             "Your account has been suspended. Please contact a platform administrator.",
+			"Title":             "Sign In - PulseMatrix AI",
+			"Error":             "Your account has been suspended. Please contact support.",
 			"AllowRegistration": h.DB.GetSystemSettings().AllowRegistration,
 		})
 		return
 	}
 
-	if err := h.issueSessionCookie(w, r, id, dbUsername, role); err != nil {
+	if err := h.issueSessionCookie(w, r, id, dbUsername, "user"); err != nil {
 		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
 		return
 	}
 
 	nowStr := time.Now().Format("2006-01-02 15:04")
 	_, _ = h.DB.Exec(`UPDATE users SET last_login_at = ? WHERE id = ?`, nowStr, id)
-	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'user_login', ?)`, id, fmt.Sprintf("User %s signed in via User Portal", dbUsername))
+	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'user_login', ?)`, id, fmt.Sprintf("User %s signed in", dbUsername))
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// ShowAdminLogin serves the unlisted, owner-only administrator sign-in page.
 func (h *AuthHandler) ShowAdminLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("X-Robots-Tag", "noindex, nofollow")
 	_ = h.AdminLoginTemplate.Execute(w, map[string]interface{}{
-		"Title": "Administrator Console Sign In - PulseMatrix AI",
-		"Error": r.URL.Query().Get("error"),
+		"Title":          "Owner Console - PulseMatrix AI",
+		"AdminLoginPath": h.AdminLoginPath,
+		"Error":          r.URL.Query().Get("error"),
 	})
 }
 
+// AdminLogin strictly verifies Owner Admin credentials + Owner Access Passkey.
 func (h *AuthHandler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	identifier := strings.TrimSpace(r.FormValue("username"))
 	password := r.FormValue("password")
+	accessKey := strings.TrimSpace(r.FormValue("access_key"))
+
+	keyValid := h.AdminAccessKey != "" &&
+		len(accessKey) == len(h.AdminAccessKey) &&
+		subtle.ConstantTimeCompare([]byte(accessKey), []byte(h.AdminAccessKey)) == 1
 
 	var id int64
 	var dbUsername, hash, role, status string
 
-	err := h.DB.QueryRow(`SELECT id, username, password, role, status FROM users WHERE username = ? OR email = ?`, identifier, identifier).Scan(&id, &dbUsername, &hash, &role, &status)
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
+	err := h.DB.QueryRow(`SELECT id, username, password, role, status FROM users WHERE (username = ? OR email = ?) AND role = 'admin'`, identifier, identifier).Scan(&id, &dbUsername, &hash, &role, &status)
+	if !keyValid || err != nil || role != "admin" || status != "active" || bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("X-Robots-Tag", "noindex, nofollow")
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = h.AdminLoginTemplate.Execute(w, map[string]interface{}{
-			"Title": "Administrator Console Sign In - PulseMatrix AI",
-			"Error": "Invalid administrator credentials.",
+			"Title":          "Owner Console - PulseMatrix AI",
+			"AdminLoginPath": h.AdminLoginPath,
+			"Error":          "Access denied. Invalid owner credentials or passkey.",
 		})
 		return
 	}
 
-	if role != "admin" {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusForbidden)
-		_ = h.AdminLoginTemplate.Execute(w, map[string]interface{}{
-			"Title": "Administrator Console Sign In - PulseMatrix AI",
-			"Error": "Administrator privileges required. Standard users must sign in via the User Portal.",
-		})
-		return
-	}
-
-	if status != "active" {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusForbidden)
-		_ = h.AdminLoginTemplate.Execute(w, map[string]interface{}{
-			"Title": "Administrator Console Sign In - PulseMatrix AI",
-			"Error": "This administrator account is currently suspended.",
-		})
-		return
-	}
-
-	if err := h.issueSessionCookie(w, r, id, dbUsername, role); err != nil {
+	if err := h.issueSessionCookie(w, r, id, dbUsername, "admin"); err != nil {
 		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
 		return
 	}
 
 	nowStr := time.Now().Format("2006-01-02 15:04")
 	_, _ = h.DB.Exec(`UPDATE users SET last_login_at = ? WHERE id = ?`, nowStr, id)
-	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'admin_login', ?)`, id, fmt.Sprintf("Admin %s signed in via Admin Console", dbUsername))
+	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'owner_admin_login', ?)`, id, fmt.Sprintf("Owner admin %s authenticated", dbUsername))
 
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
@@ -178,7 +184,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_ = h.RegisterTemplate.Execute(w, map[string]interface{}{
 			"Title":             "Create Account - PulseMatrix AI",
-			"Error":             "New user registrations are currently paused by the platform administrator.",
+			"Error":             "New account registrations are currently paused.",
 			"AllowRegistration": false,
 		})
 		return
@@ -234,7 +240,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	userID, _ := res.LastInsertId()
 	_ = h.DB.SeedDefaults(userID)
-	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'user_registered', ?)`, userID, fmt.Sprintf("New user %s (%s) registered (INR default)", username, email))
+	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'user_registered', ?)`, userID, fmt.Sprintf("New user %s (%s) registered", username, email))
 
 	if err := h.issueSessionCookie(w, r, userID, username, "user"); err != nil {
 		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
@@ -254,10 +260,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Secure:   isHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 	})
-	if r.URL.Query().Get("portal") == "admin" {
-		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-		return
-	}
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
@@ -282,7 +284,6 @@ func (h *AuthHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/?success=Account+settings+updated", http.StatusSeeOther)
 }
 
-// SwitchCurrency allows instant 1-click currency swapping (INR / USD / EUR / GBP / CAD) from the topbar.
 func (h *AuthHandler) SwitchCurrency(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int64)
 	currency := strings.ToUpper(strings.TrimSpace(r.FormValue("currency")))

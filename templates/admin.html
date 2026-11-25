@@ -121,12 +121,6 @@
                         <td>
                             {{if ne .ID $.AdminID}}
                             <div class="inline-actions">
-                                <form action="/admin/users/toggle-role" method="POST" style="display:inline;">
-                                    <input type="hidden" name="id" value="{{.ID}}">
-                                    <button type="submit" class="btn btn-sm btn-secondary">
-                                        {{if eq .Role "admin"}}Demote{{else}}Make Admin{{end}}
-                                    </button>
-                                </form>
                                 <form action="/admin/users/toggle-status" method="POST" style="display:inline;">
                                     <input type="hidden" name="id" value="{{.ID}}">
                                     <button type="submit" class="btn btn-sm {{if eq .Status "active"}}btn-outline-danger{{else}}btn-success{{end}}">
@@ -139,7 +133,7 @@
                                 </form>
                             </div>
                             {{else}}
-                            <span class="text-muted text-sm">Protected Session</span>
+                            <span class="badge badge-warning">Owner (Exclusive)</span>
                             {{end}}
                         </td>
                     </tr>
@@ -281,17 +275,10 @@
                     <label>Temporary Password (min 6 chars)</label>
                     <input type="password" name="password" minlength="6" class="form-control" required>
                 </div>
-                <div class="form-group">
-                    <label>Account Role</label>
-                    <select name="role" class="form-control">
-                        <option value="user">Standard User</option>
-                        <option value="admin">Platform Administrator</option>
-                    </select>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeCreateUserModal()">Cancel</button>
-                <button type="submit" class="btn btn-admin">Provision Account</button>
+                <button type="submit" class="btn btn-admin">Provision User</button>
             </div>
         </form>
     </div>
