@@ -1,11 +1,14 @@
--- 001_init.sql (Reference schema matching db/db.go)
+-- 001_init.sql (Reference schema matching db/db.go v3.0)
 CREATE TABLE IF NOT EXISTS users (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     username            TEXT NOT NULL UNIQUE,
     email               TEXT NOT NULL UNIQUE,
     password            TEXT NOT NULL,
+    role                TEXT NOT NULL DEFAULT 'user',
+    status              TEXT NOT NULL DEFAULT 'active',
     preferred_currency  TEXT NOT NULL DEFAULT 'USD',
     monthly_budget_goal REAL NOT NULL DEFAULT 4500.0,
+    last_login_at       TEXT DEFAULT '',
     created_at          DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -56,6 +59,25 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     created_at        DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS savings_goals (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name           TEXT NOT NULL,
+    icon           TEXT NOT NULL DEFAULT '🎯',
+    target_amount  REAL NOT NULL,
+    current_amount REAL NOT NULL DEFAULT 0,
+    target_date    DATE NOT NULL,
+    category       TEXT NOT NULL DEFAULT 'Savings',
+    status         TEXT NOT NULL DEFAULT 'active',
+    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS system_settings (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -68,3 +90,4 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, d
 CREATE INDEX IF NOT EXISTS idx_transactions_cat       ON transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_vendor    ON transactions(user_id, vendor);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user     ON subscriptions(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_goals_user             ON savings_goals(user_id, status);

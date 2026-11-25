@@ -17,11 +17,14 @@ type ViewContext map[string]interface{}
 // GetBaseContext retrieves standard layout context required by base.html.
 func GetBaseContext(database *db.DB, userID int64, username string) ViewContext {
 	var user models.User
-	_ = database.QueryRow(`SELECT id, username, email, preferred_currency, monthly_budget_goal FROM users WHERE id = ?`, userID).Scan(
-		&user.ID, &user.Username, &user.Email, &user.PreferredCurrency, &user.MonthlyBudgetGoal,
+	_ = database.QueryRow(`SELECT id, username, email, role, status, preferred_currency, monthly_budget_goal, COALESCE(last_login_at, '') FROM users WHERE id = ?`, userID).Scan(
+		&user.ID, &user.Username, &user.Email, &user.Role, &user.Status, &user.PreferredCurrency, &user.MonthlyBudgetGoal, &user.LastLoginAt,
 	)
 	if user.Username == "" {
 		user.Username = username
+	}
+	if user.Role == "" {
+		user.Role = "user"
 	}
 	if user.PreferredCurrency == "" {
 		user.PreferredCurrency = "USD"
@@ -30,25 +33,29 @@ func GetBaseContext(database *db.DB, userID int64, username string) ViewContext 
 		user.MonthlyBudgetGoal = 4500.0
 	}
 
-	catRows, _ := database.Query(`SELECT id, name, icon, color FROM categories WHERE user_id = ? ORDER BY name ASC`, userID)
+	catRows, _ := database.Query(`SELECT id, name, icon, color, type, monthly_limit FROM categories WHERE user_id = ? ORDER BY name ASC`, userID)
 	categories := make([]models.Category, 0)
 	if catRows != nil {
 		defer catRows.Close()
 		for catRows.Next() {
 			var c models.Category
-			if err := catRows.Scan(&c.ID, &c.Name, &c.Icon, &c.Color); err == nil {
+			if err := catRows.Scan(&c.ID, &c.Name, &c.Icon, &c.Color, &c.Type, &c.MonthlyLimit); err == nil {
 				categories = append(categories, c)
 			}
 		}
 	}
 
+	sysSettings := database.GetSystemSettings()
 	now := time.Now()
 	return ViewContext{
-		"Username":    user.Username,
-		"User":        user,
-		"CurrentDate": now.Format("Jan 02, 2006"),
-		"TodayISO":    now.Format("2006-01-02"),
-		"Categories":  categories,
+		"Username":           user.Username,
+		"User":               user,
+		"UserRole":           user.Role,
+		"IsAdmin":            user.Role == "admin",
+		"AnnouncementBanner": sysSettings.AnnouncementBanner,
+		"CurrentDate":        now.Format("Jan 02, 2006"),
+		"TodayISO":           now.Format("2006-01-02"),
+		"Categories":         categories,
 	}
 }
 

@@ -4,8 +4,18 @@
 [![Deploy to Render](https://img.shields.io/badge/Deploy%20to-Render-46E3B7?style=for-the-badge)](https://render.com/deploy?repo=https://github.com/shubh-aarambh/pulsematrix-ai)
 
 > **Live Deployment:** https://pulsematrix-ai.onrender.com (Health Check: https://pulsematrix-ai.onrender.com/health)
+> **Separate Portals:** User Login (`/login`) • Admin Console Login (`/admin/login`)
 >
-> A production-grade, high-performance financial analytics and expense intelligence platform written in **Go**, featuring autonomous receipt/OCR parsing with **Google Gemini AI**, statistical anomaly detection, multi-currency live exchange rates, automated recurring subscription tracking, and real-time payment app / bank webhook ingestion.
+> A flagship, production-grade financial analytics and expense intelligence platform written in **Go**, featuring **separate Role-Based User & Admin Portals**, **Budgets & Savings Goals**, **Bulk CSV Import/Export**, **Live Multi-Currency FX Converter**, **`Ctrl+K` Command Palette**, **Dark/Light Theme**, autonomous receipt/SMS parsing with **Google Gemini AI**, statistical anomaly detection, and real-time payment app webhooks.
+
+---
+
+## ✨ Flagship v3.0 Features
+
+- **Separate User & Admin Portals (`/login` vs `/admin/login`):** Dedicated RBAC middleware enforcing admin-only access to the **Platform Admin Console (`/admin`)** with user provisioning, role promotion/demotion, account suspension, global announcement banners, dynamic anomaly thresholds, and cross-tenant audit logs.
+- **Budgets & Savings Goals Hub (`/goals`):** Real-time month-to-date category budget envelopes with over-budget guards, custom category builder, and personal savings goal milestones with live contribution tracking.
+- **Enhanced Ledger (`/transactions`):** Full inline transaction editing, one-click anomaly resolution ("Mark Safe"), multi-currency **Bulk CSV Statement Import** + downloadable CSV template, and full CSV ledger export.
+- **Executive UI/UX:** Split-screen glassmorphic auth portals, **Dark & Light theme toggle**, **`Ctrl+K` Quick Command Palette**, and a **Live Multi-Currency FX Converter** modal powered by `/api/currency/rates`.
 
 ---
 

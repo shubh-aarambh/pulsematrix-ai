@@ -15,6 +15,9 @@ type Config struct {
 	ExchangeRateAPIKey string
 	BaseCurrency       string
 	EnableAIServices   bool
+	AdminUsername      string
+	AdminEmail         string
+	AdminPassword      string
 }
 
 func Load() *Config {
@@ -29,6 +32,9 @@ func Load() *Config {
 		ExchangeRateAPIKey: getEnv("EXCHANGERATE_API_KEY", ""),
 		BaseCurrency:       getEnv("BASE_CURRENCY", "USD"),
 		EnableAIServices:   getEnv("ENABLE_AI_SERVICES", "true") == "true",
+		AdminUsername:      getEnv("ADMIN_USERNAME", "admin"),
+		AdminEmail:         getEnv("ADMIN_EMAIL", "admin@pulsematrix.ai"),
+		AdminPassword:      getEnv("ADMIN_PASSWORD", "Admin@2026"),
 	}
 }
 

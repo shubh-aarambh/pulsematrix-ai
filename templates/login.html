@@ -3,40 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - PulseMatrix AI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>{{.Title}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="auth-body">
-    <div class="auth-card">
-        <div class="auth-brand">
-            <span class="auth-icon">⚡</span>
-            <h2>Pulse<span class="brand-accent">Matrix</span> AI</h2>
-            <p class="auth-subtitle">Autonomous Financial Intelligence Platform</p>
-        </div>
-
-        {{if .Error}}
-        <div class="alert alert-danger">{{.Error}}</div>
-        {{end}}
-
-        <form action="/login" method="POST" class="auth-form">
-            <div class="form-group">
-                <label>Username or Email</label>
-                <input type="text" name="username" class="form-control" placeholder="Enter your username or email" required autofocus>
+    <div class="auth-split">
+        <!-- Showcase Brand Panel -->
+        <section class="auth-showcase">
+            <div class="showcase-top">
+                <div class="brand-logo">
+                    <div class="logo-mark">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    </div>
+                    <span class="brand-text">Pulse<span class="brand-accent">Matrix</span> AI</span>
+                </div>
+                <span class="badge badge-primary">FLAGSHIP v3.0</span>
             </div>
 
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" class="form-control" placeholder="••••••••••••" required>
+            <div class="showcase-hero">
+                <h1>Autonomous Financial Intelligence for Modern Spenders.</h1>
+                <p>Track every transaction across currencies, scan receipts &amp; bank SMS with AI, monitor category budgets &amp; savings goals, and catch billing anomalies before they drain your cashflow.</p>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block btn-lg">Sign In to Dashboard &rarr;</button>
-        </form>
+            <div class="showcase-features">
+                <div class="showcase-feat">
+                    <span class="feat-icon">🤖</span>
+                    <div>
+                        <strong>AI Receipt &amp; SMS Parser</strong>
+                        <span>Ingest Google Pay, PhonePe, Apple Pay &amp; bank alerts in real time</span>
+                    </div>
+                </div>
+                <div class="showcase-feat">
+                    <span class="feat-icon">🎯</span>
+                    <div>
+                        <strong>Budgets &amp; Savings Goals</strong>
+                        <span>Live category envelopes, over-budget radar &amp; goal milestones</span>
+                    </div>
+                </div>
+                <div class="showcase-feat">
+                    <span class="feat-icon">🌍</span>
+                    <div>
+                        <strong>Live Multi-Currency FX Engine</strong>
+                        <span>Real-time USD, EUR, GBP, INR &amp; CAD normalization + CSV bulk import</span>
+                    </div>
+                </div>
+            </div>
 
-        <div class="auth-footer">
-            <span>Don't have an account?</span>
-            <a href="/register" class="link-accent">Create Enterprise Account</a>
-        </div>
+            <div class="showcase-footer">
+                <span>Go 1.23 • SQLite WAL • JWT RBAC • Gemini AI</span>
+            </div>
+        </section>
+
+        <!-- Auth Form Panel -->
+        <section class="auth-panel">
+            <div class="auth-card">
+                <div class="portal-switcher">
+                    <a href="/login" class="portal-tab active">👤 User Portal</a>
+                    <a href="/admin/login" class="portal-tab">🛡️ Admin Console</a>
+                </div>
+
+                <div class="auth-brand">
+                    <h2>Welcome Back</h2>
+                    <p class="auth-subtitle">Sign in to your personal financial command center</p>
+                </div>
+
+                {{if .Error}}
+                <div class="alert alert-danger">{{.Error}}</div>
+                {{end}}
+                {{if .Success}}
+                <div class="alert alert-success">{{.Success}}</div>
+                {{end}}
+
+                <form action="/login" method="POST" class="auth-form">
+                    <div class="form-group">
+                        <label>Username or Email</label>
+                        <input type="text" name="username" class="form-control" placeholder="alex_quant or alex@company.com" required autofocus>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••••••" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Sign In to Workspace &rarr;</button>
+                </form>
+
+                {{if .AllowRegistration}}
+                <div class="auth-footer">
+                    <span>New to PulseMatrix?</span>
+                    <a href="/register" class="link-accent">Create Free Account</a>
+                </div>
+                {{else}}
+                <div class="auth-footer">
+                    <span class="text-muted">Public registration is currently disabled by administrator.</span>
+                </div>
+                {{end}}
+            </div>
+        </section>
     </div>
 </body>
 </html>

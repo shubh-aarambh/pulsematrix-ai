@@ -1,12 +1,15 @@
-// PulseMatrix AI - Clean Enterprise SaaS Controller
+// PulseMatrix AI v3.0 - Executive SaaS Controller
 
 document.addEventListener('DOMContentLoaded', () => {
+    syncThemeIcon();
     initCharts();
     initModalUX();
     initAutoDismissToasts();
+    initKeyboardShortcuts();
 });
 
 let currentAIParsed = null;
+let fxRatesCache = null;
 
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -17,6 +20,178 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
+
+// Theme Switcher (Obsidian Dark / Crisp Daylight Light)
+function syncThemeIcon() {
+    const icon = document.getElementById('themeIcon');
+    if (!icon) return;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    icon.textContent = isLight ? '🌙' : '☀️';
+}
+
+window.toggleTheme = function() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('pm_theme', 'dark');
+    } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('pm_theme', 'light');
+    }
+    syncThemeIcon();
+};
+
+// Command Palette (Ctrl+K / Cmd+K)
+function getCommands() {
+    const cmds = [
+        { label: 'Go to Dashboard', hint: 'Home', icon: '📊', action: () => window.location.href = '/' },
+        { label: 'Go to Transactions Ledger', hint: 'Search, Edit, CSV', icon: '💳', action: () => window.location.href = '/transactions' },
+        { label: 'Go to Budgets & Savings Goals', hint: 'Envelopes & Targets', icon: '🎯', action: () => window.location.href = '/goals' },
+        { label: 'Go to Analytics & Risk Radar', hint: 'Charts', icon: '📈', action: () => window.location.href = '/analytics' },
+        { label: 'Go to Subscriptions Radar', hint: 'Recurring', icon: '🔄', action: () => window.location.href = '/subscriptions' },
+        { label: 'Go to AI Financial Strategist', hint: 'Chat', icon: '🤖', action: () => window.location.href = '/ai-advisor' },
+        { label: 'Go to Payment Apps & SMS Sync', hint: 'Webhooks', icon: '📱', action: () => window.location.href = '/bank-sync' },
+        { label: 'Action: Add New Transaction', hint: 'Modal', icon: '➕', action: () => { closeCommandPalette(); openAddTxModal(); } },
+        { label: 'Action: Scan Receipt / SMS with AI', hint: 'Parser', icon: '📷', action: () => { closeCommandPalette(); openReceiptModal(); } },
+        { label: 'Action: Open Live FX Converter', hint: 'Currency', icon: '💱', action: () => { closeCommandPalette(); openFXModal(); } },
+        { label: 'Action: Toggle Dark / Light Theme', hint: 'UI', icon: '🌗', action: () => { closeCommandPalette(); toggleTheme(); } },
+        { label: 'Action: Export Full Ledger CSV', hint: 'Download', icon: '📥', action: () => window.location.href = '/transactions/export/csv' },
+    ];
+    if (window.__PM_IS_ADMIN) {
+        cmds.unshift({ label: 'Go to Platform Admin Console', hint: 'RBAC & Ops', icon: '🛡️', action: () => window.location.href = '/admin' });
+    }
+    return cmds;
+}
+
+window.openCommandPalette = function() {
+    const modal = document.getElementById('commandPaletteModal');
+    const input = document.getElementById('cmdSearchInput');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    if (input) {
+        input.value = '';
+        filterCommandPalette('');
+        setTimeout(() => input.focus(), 30);
+    }
+};
+
+window.closeCommandPalette = function() {
+    const modal = document.getElementById('commandPaletteModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.filterCommandPalette = function(q) {
+    const list = document.getElementById('cmdList');
+    if (!list) return;
+    const term = (q || '').trim().toLowerCase();
+    const matches = getCommands().filter(c =>
+        !term || c.label.toLowerCase().includes(term) || c.hint.toLowerCase().includes(term)
+    );
+    list.innerHTML = '';
+    if (matches.length === 0) {
+        list.innerHTML = '<div class="cmd-empty">No matching commands found.</div>';
+        return;
+    }
+    matches.forEach((cmd) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cmd-item';
+        btn.innerHTML = `<span class="cmd-item-left"><span>${escapeHtml(cmd.icon)}</span><span>${escapeHtml(cmd.label)}</span></span><span class="cmd-hint">${escapeHtml(cmd.hint)}</span>`;
+        btn.addEventListener('click', cmd.action);
+        list.appendChild(btn);
+    });
+};
+
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            openCommandPalette();
+        }
+    });
+}
+
+// Live Multi-Currency FX Converter
+window.openFXModal = async function() {
+    const modal = document.getElementById('fxConverterModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    if (!fxRatesCache) {
+        try {
+            const resp = await fetch('/api/currency/rates');
+            if (resp.ok) {
+                const data = await resp.json();
+                fxRatesCache = data.rates || {};
+            }
+        } catch (err) {
+            console.error('FX rates fetch error:', err);
+        }
+    }
+    computeFXConversion();
+};
+
+window.closeFXModal = function() {
+    const modal = document.getElementById('fxConverterModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.swapFXCurrencies = function() {
+    const fromEl = document.getElementById('fxFrom');
+    const toEl = document.getElementById('fxTo');
+    if (!fromEl || !toEl) return;
+    const tmp = fromEl.value;
+    fromEl.value = toEl.value;
+    toEl.value = tmp;
+    computeFXConversion();
+};
+
+window.computeFXConversion = function() {
+    const amt = parseFloat(document.getElementById('fxAmount')?.value || '0') || 0;
+    const from = document.getElementById('fxFrom')?.value || 'INR';
+    const to = document.getElementById('fxTo')?.value || 'USD';
+    const valEl = document.getElementById('fxResultValue');
+    const metaEl = document.getElementById('fxRateMeta');
+    if (!valEl || !metaEl) return;
+
+    const rates = fxRatesCache || { USD: 1, EUR: 0.92, GBP: 0.79, INR: 83.5, CAD: 1.36, AUD: 1.52, JPY: 155.2 };
+    const rFrom = rates[from] || 1;
+    const rTo = rates[to] || 1;
+    const rate = rTo / rFrom;
+    const converted = amt * rate;
+
+    valEl.textContent = `${amt.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${from} = ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${to}`;
+    metaEl.textContent = `Live Rate: 1 ${from} = ${rate.toFixed(4)} ${to}`;
+};
+
+// Edit Transaction & CSV Import Modals
+window.openEditTxModal = function(btn) {
+    const modal = document.getElementById('editTxModal');
+    if (!modal || !btn) return;
+    document.getElementById('editTxId').value = btn.dataset.id || '';
+    document.getElementById('editTxVendor').value = btn.dataset.vendor || '';
+    document.getElementById('editTxAmount').value = btn.dataset.amount || '';
+    document.getElementById('editTxCurrency').value = btn.dataset.currency || 'USD';
+    document.getElementById('editTxCategory').value = btn.dataset.categoryId || '';
+    document.getElementById('editTxDate').value = btn.dataset.date || '';
+    document.getElementById('editTxMethod').value = btn.dataset.method || '';
+    document.getElementById('editTxDescription').value = btn.dataset.description || '';
+    modal.style.display = 'flex';
+};
+
+window.closeEditTxModal = function() {
+    const modal = document.getElementById('editTxModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.openImportCsvModal = function() {
+    const modal = document.getElementById('importCsvModal');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeImportCsvModal = function() {
+    const modal = document.getElementById('importCsvModal');
+    if (modal) modal.style.display = 'none';
+};
 
 function initModalUX() {
     document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
@@ -52,7 +227,6 @@ window.toggleMobileSidebar = function() {
     if (sidebar) sidebar.classList.toggle('open');
 };
 
-// Modal Controls - Bound to window object for inline onclick handlers
 window.openReceiptModal = function() {
     const modal = document.getElementById('aiReceiptModal');
     if (modal) modal.style.display = 'flex';
@@ -139,7 +313,6 @@ window.runAIReceiptParser = async function() {
     }
 };
 
-// Confirm AI Parsed Entry & Post to Backend
 window.confirmAITransaction = async function() {
     if (!currentAIParsed) return;
 
@@ -258,7 +431,7 @@ function showEmptyChartState(canvas, message) {
     canvas.parentElement.appendChild(note);
 }
 
-// Chart Initialization with Refined SaaS Palette
+// Chart Initialization
 async function initCharts() {
     const trendCtx = document.getElementById('monthlyTrendChart');
     const doughnutCtx = document.getElementById('categoryDoughnutChart');
@@ -266,6 +439,12 @@ async function initCharts() {
     const catCtx = document.getElementById('analyticsCategoryChart');
 
     if (!trendCtx && !doughnutCtx && !velCtx && !catCtx) return;
+
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const tickColor = isLight ? '#475569' : '#64748b';
+    const legendColor = isLight ? '#334155' : '#94a3b8';
+    const gridColor = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.04)';
+    const doughnutBorder = isLight ? '#ffffff' : '#141720';
 
     try {
         const resTrends = await fetch('/api/reports/monthly');
@@ -278,7 +457,6 @@ async function initCharts() {
 
         const cleanPalette = ['#6366f1', '#10b981', '#0ea5e9', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#84cc16', '#64748b'];
 
-        // Render Dashboard Trends Chart
         if (trendCtx) {
             if (trends.length > 0) {
                 new Chart(trendCtx, {
@@ -290,22 +468,22 @@ async function initCharts() {
                                 label: 'Income ($)',
                                 data: trends.map(t => t.income),
                                 borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                                 borderWidth: 2.5,
                                 pointBackgroundColor: '#10b981',
-                                pointRadius: 3,
-                                tension: 0.3,
+                                pointRadius: 3.5,
+                                tension: 0.35,
                                 fill: true
                             },
                             {
                                 label: 'Expenses ($)',
                                 data: trends.map(t => t.expense),
                                 borderColor: '#6366f1',
-                                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
                                 borderWidth: 2.5,
                                 pointBackgroundColor: '#6366f1',
-                                pointRadius: 3,
-                                tension: 0.3,
+                                pointRadius: 3.5,
+                                tension: 0.35,
                                 fill: true
                             }
                         ]
@@ -314,11 +492,11 @@ async function initCharts() {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } } }
+                            legend: { labels: { color: legendColor, font: { family: 'Inter', size: 12 } } }
                         },
                         scales: {
-                            x: { ticks: { color: '#64748b', font: { family: 'Inter' } }, grid: { color: 'rgba(255, 255, 255, 0.03)' } },
-                            y: { ticks: { color: '#64748b', font: { family: 'Inter' } }, grid: { color: 'rgba(255, 255, 255, 0.03)' } }
+                            x: { ticks: { color: tickColor, font: { family: 'Inter' } }, grid: { color: gridColor } },
+                            y: { ticks: { color: tickColor, font: { family: 'Inter' } }, grid: { color: gridColor } }
                         }
                     }
                 });
@@ -327,7 +505,6 @@ async function initCharts() {
             }
         }
 
-        // Render Dashboard Category Doughnut
         if (doughnutCtx) {
             if (categories.length > 0) {
                 new Chart(doughnutCtx, {
@@ -338,14 +515,15 @@ async function initCharts() {
                             data: categories.map(c => c.amount),
                             backgroundColor: categories.map((c, i) => c.color || cleanPalette[i % cleanPalette.length]),
                             borderWidth: 2,
-                            borderColor: '#141720'
+                            borderColor: doughnutBorder
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        cutout: '62%',
                         plugins: {
-                            legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } } }
+                            legend: { position: 'bottom', labels: { color: legendColor, font: { family: 'Inter', size: 11 } } }
                         }
                     }
                 });
@@ -354,7 +532,6 @@ async function initCharts() {
             }
         }
 
-        // Render Analytics Velocity Chart
         if (velCtx) {
             if (trends.length > 0) {
                 new Chart(velCtx, {
@@ -364,8 +541,8 @@ async function initCharts() {
                         datasets: [{
                             label: 'Net Surplus ($)',
                             data: trends.map(t => t.savings),
-                            backgroundColor: trends.map(t => t.savings >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-                            borderRadius: 4
+                            backgroundColor: trends.map(t => t.savings >= 0 ? 'rgba(16, 185, 129, 0.82)' : 'rgba(244, 63, 94, 0.82)'),
+                            borderRadius: 6
                         }]
                     },
                     options: {
@@ -373,8 +550,8 @@ async function initCharts() {
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
-                            x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                            y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+                            x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                            y: { ticks: { color: tickColor }, grid: { color: gridColor } }
                         }
                     }
                 });
@@ -383,7 +560,6 @@ async function initCharts() {
             }
         }
 
-        // Render Analytics Category Horizontal Bar Chart
         if (catCtx) {
             if (categories.length > 0) {
                 new Chart(catCtx, {
@@ -394,7 +570,7 @@ async function initCharts() {
                             label: 'Spend ($)',
                             data: categories.map(c => c.amount),
                             backgroundColor: categories.map((c, i) => c.color || cleanPalette[i % cleanPalette.length]),
-                            borderRadius: 4
+                            borderRadius: 6
                         }]
                     },
                     options: {
@@ -403,8 +579,8 @@ async function initCharts() {
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
-                            x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                            y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+                            x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                            y: { ticks: { color: tickColor }, grid: { color: gridColor } }
                         }
                     }
                 });

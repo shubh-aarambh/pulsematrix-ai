@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"html/template"
+	"math"
 	"net/http"
 
 	"expense-matrix/db"
@@ -70,6 +71,25 @@ func (h *DashboardHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Top 3 active savings goals preview
+	var topGoals []models.SavingsGoal
+	if gRows, err := h.DB.Query(`
+		SELECT id, name, icon, target_amount, current_amount, target_date, status
+		FROM savings_goals
+		WHERE user_id = ?
+		ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, target_date ASC LIMIT 3`, userID); err == nil {
+		defer gRows.Close()
+		for gRows.Next() {
+			var g models.SavingsGoal
+			if err := gRows.Scan(&g.ID, &g.Name, &g.Icon, &g.TargetAmount, &g.CurrentAmount, &g.TargetDate, &g.Status); err == nil {
+				if g.TargetAmount > 0 {
+					g.ProgressPct = math.Round((g.CurrentAmount/g.TargetAmount)*1000) / 10
+				}
+				topGoals = append(topGoals, g)
+			}
+		}
+	}
+
 	cats, _ := h.IntelService.FetchCategoryBreakdown(userID)
 
 	var activeSubCount int
@@ -85,10 +105,11 @@ func (h *DashboardHandler) Show(w http.ResponseWriter, r *http.Request) {
 		FROM subscriptions
 		WHERE user_id = ? AND status = 'active'`, userID).Scan(&activeSubCount, &activeSubTotal)
 
-	viewCtx["Title"] = "Command Center - PulseMatrix AI"
+	viewCtx["Title"] = "Command Center"
 	viewCtx["ActivePage"] = "dashboard"
 	viewCtx["Health"] = health
 	viewCtx["RecentTxs"] = recentTxs
+	viewCtx["TopGoals"] = topGoals
 	viewCtx["CategorySpends"] = cats
 	viewCtx["ActiveSubCount"] = activeSubCount
 	viewCtx["ActiveSubTotal"] = activeSubTotal

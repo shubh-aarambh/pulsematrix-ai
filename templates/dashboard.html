@@ -45,7 +45,6 @@
                     <span id="lblBudgetUtil">{{.Health.BudgetUtilization}}% Used</span>
                 </div>
             </div>
-            <!-- Live Budget Slider -->
             <form action="/settings/update" method="POST" class="range-slider-container">
                 <div class="range-slider-label">
                     <span>Adjust Monthly Target</span>
@@ -87,7 +86,6 @@
 
     <!-- Charts Row -->
     <div class="charts-row">
-        <!-- 6 Month Income vs Expense Chart -->
         <div class="card chart-card flex-2">
             <div class="card-header-flex">
                 <div>
@@ -101,7 +99,6 @@
             </div>
         </div>
 
-        <!-- Category Breakdown Chart -->
         <div class="card chart-card flex-1">
             <div class="card-header-flex">
                 <div>
@@ -115,9 +112,38 @@
         </div>
     </div>
 
+    <!-- Active Savings Goals Snapshot -->
+    {{if .TopGoals}}
+    <div class="card">
+        <div class="card-header-flex">
+            <div>
+                <h3>🎯 Active Savings Milestones</h3>
+                <p class="subtitle">Real-time progress toward your personal financial targets</p>
+            </div>
+            <a href="/goals" class="btn btn-secondary-sm">Manage Budgets &amp; Goals &rarr;</a>
+        </div>
+        <div class="goals-snapshot-row">
+            {{range .TopGoals}}
+            <div class="goal-mini-card">
+                <div class="goal-mini-head">
+                    <span>{{.Icon}} <strong>{{.Name}}</strong></span>
+                    <span class="badge {{if eq .Status "completed"}}badge-success{{else}}badge-primary{{end}}">{{.ProgressPct}}%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill fill-emerald" {{safeWidthStyle .ProgressPct}}></div>
+                </div>
+                <div class="progress-labels">
+                    <span>${{printf "%.0f" .CurrentAmount}} saved</span>
+                    <span>Goal ${{printf "%.0f" .TargetAmount}}</span>
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+
     <!-- Bottom Row: Recent Ledger & AI Insights -->
     <div class="bottom-row">
-        <!-- Recent Ledger Activity -->
         <div class="card flex-2">
             <div class="card-header-flex">
                 <h3>Recent Ledger Activity</h3>
@@ -151,9 +177,7 @@
                                 </div>
                             </td>
                             <td><span class="text-muted font-mono">{{.Date}}</span></td>
-                            <td>
-                                <span class="source-badge">{{.Source}}</span>
-                            </td>
+                            <td><span class="source-badge">{{.Source}}</span></td>
                             <td class="text-bold font-mono">${{printf "%.2f" .Amount}}</td>
                         </tr>
                         {{else}}
@@ -166,7 +190,6 @@
             </div>
         </div>
 
-        <!-- AI Advisor Recommendations Card -->
         <div class="card flex-1 ai-card">
             <div class="card-header-flex">
                 <h3>🤖 AI Financial Portfolio Audit</h3>

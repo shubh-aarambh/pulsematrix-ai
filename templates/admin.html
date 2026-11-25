@@ -1,0 +1,306 @@
+{{define "content"}}
+<div class="admin-console-container">
+    <!-- Admin Header Banner -->
+    <div class="card bg-gradient-admin">
+        <div class="card-header-flex" style="margin-bottom:0.4rem;">
+            <div>
+                <div class="admin-shield-pill">🛡️ PLATFORM ADMINISTRATOR CONTROL PLANE</div>
+                <h2 style="margin-top:0.5rem;">PulseMatrix Global Operations &amp; Governance</h2>
+                <p class="subtitle">Monitor platform telemetry, manage user RBAC roles, tune anomaly thresholds, and audit security logs.</p>
+            </div>
+            <div class="action-buttons">
+                <a href="/" class="btn btn-secondary-sm">User Workspace</a>
+                <button class="btn btn-admin" onclick="openCreateUserModal()">+ Provision User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform KPIs -->
+    <div class="metrics-row">
+        <div class="card metric-card">
+            <div class="card-header-flex">
+                <span class="card-label">Registered Accounts</span>
+                <span class="badge badge-primary">{{.Stats.AdminCount}} Admins</span>
+            </div>
+            <div class="metric-value">{{.Stats.TotalUsers}}</div>
+            <div class="progress-labels">
+                <span class="text-success">{{.Stats.ActiveUsers}} Active</span>
+                <span class="{{if gt .Stats.SuspendedUsers 0}}text-danger{{else}}text-muted{{end}}">{{.Stats.SuspendedUsers}} Suspended</span>
+            </div>
+        </div>
+
+        <div class="card metric-card">
+            <div class="card-header-flex">
+                <span class="card-label">Platform Ledger Volume</span>
+                <span class="badge badge-success">USD Normalized</span>
+            </div>
+            <div class="metric-value">${{printf "%.2f" .Stats.TotalVolumeUSD}}</div>
+            <div class="progress-labels">
+                <span>{{.Stats.TotalTransactions}} Total Entries</span>
+                <span>{{.Stats.TotalGoals}} Savings Goals</span>
+            </div>
+        </div>
+
+        <div class="card metric-card">
+            <div class="card-header-flex">
+                <span class="card-label">Flagged Anomalies</span>
+                <span class="badge badge-warning">Risk Radar</span>
+            </div>
+            <div class="metric-value text-warning">{{.Stats.TotalAnomalies}}</div>
+            <div class="progress-labels">
+                <span>Threshold: ${{printf "%.0f" .Settings.AnomalyThreshold}}</span>
+                <span>Cross-tenant alerts</span>
+            </div>
+        </div>
+
+        <div class="card metric-card">
+            <div class="card-header-flex">
+                <span class="card-label">Recurring Services</span>
+                <span class="badge badge-ghost">SaaS Engine</span>
+            </div>
+            <div class="metric-value">{{.Stats.ActiveSubs}}</div>
+            <div class="progress-labels">
+                <span>Active Subscriptions</span>
+                <span class="text-success">System Healthy</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Directory & RBAC Table -->
+    <div class="card">
+        <div class="card-header-flex">
+            <div>
+                <h3>User Directory &amp; Role-Based Access Control</h3>
+                <p class="subtitle">Promote/demote administrators, suspend compromised accounts, or inspect user ledger footprint.</p>
+            </div>
+            <form action="/admin" method="GET" class="admin-filter-row">
+                <input type="text" name="q" class="form-control" placeholder="Search username or email..." value="{{.Search}}">
+                <select name="role" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Roles</option>
+                    <option value="admin" {{if eq .RoleFilter "admin"}}selected{{end}}>Admins Only</option>
+                    <option value="user" {{if eq .RoleFilter "user"}}selected{{end}}>Standard Users</option>
+                </select>
+                <button type="submit" class="btn btn-secondary-sm">Filter</button>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Ledger Activity</th>
+                        <th>Last Login</th>
+                        <th>Admin Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Users}}
+                    <tr>
+                        <td>
+                            <div class="vendor-cell">
+                                <span class="text-bold">{{.Username}}{{if eq .ID $.AdminID}} <span class="badge badge-ghost">You</span>{{end}}</span>
+                                <span class="text-muted text-sm">{{.Email}} • Joined {{.CreatedAt}}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {{if eq .Role "admin"}}badge-warning{{else}}badge-primary{{end}}">{{upper .Role}}</span>
+                        </td>
+                        <td>
+                            <span class="badge {{if eq .Status "active"}}badge-success{{else}}badge-danger{{end}}">{{.Status}}</span>
+                        </td>
+                        <td>
+                            <div class="vendor-cell">
+                                <span class="font-mono text-bold">${{printf "%.2f" .TotalSpend}}</span>
+                                <span class="text-muted text-sm">{{.TxCount}} txns • {{.SubCount}} subs</span>
+                            </div>
+                        </td>
+                        <td><span class="font-mono text-muted text-sm">{{if .LastLoginAt}}{{.LastLoginAt}}{{else}}Never{{end}}</span></td>
+                        <td>
+                            {{if ne .ID $.AdminID}}
+                            <div class="inline-actions">
+                                <form action="/admin/users/toggle-role" method="POST" style="display:inline;">
+                                    <input type="hidden" name="id" value="{{.ID}}">
+                                    <button type="submit" class="btn btn-sm btn-secondary" title="Switch User/Admin Role">
+                                        {{if eq .Role "admin"}}Demote{{else}}Make Admin{{end}}
+                                    </button>
+                                </form>
+                                <form action="/admin/users/toggle-status" method="POST" style="display:inline;">
+                                    <input type="hidden" name="id" value="{{.ID}}">
+                                    <button type="submit" class="btn btn-sm {{if eq .Status "active"}}btn-outline-danger{{else}}btn-success{{end}}">
+                                        {{if eq .Status "active"}}Suspend{{else}}Activate{{end}}
+                                    </button>
+                                </form>
+                                <form action="/admin/users/delete" method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete user {{.Username}} and all their data?');">
+                                    <input type="hidden" name="id" value="{{.ID}}">
+                                    <button type="submit" class="btn-icon-danger" title="Delete User">&times;</button>
+                                </form>
+                            </div>
+                            {{else}}
+                            <span class="text-muted text-sm">Protected Session</span>
+                            {{end}}
+                        </td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No users match your search filter.</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Global Controls + Anomalies Row -->
+    <div class="charts-row">
+        <!-- Global Platform Settings -->
+        <div class="card flex-1">
+            <div class="card-header-flex">
+                <div>
+                    <h3>⚙️ Global Platform Controls</h3>
+                    <p class="subtitle">Applied immediately across all active user workspaces</p>
+                </div>
+            </div>
+            <form action="/admin/settings" method="POST">
+                <div class="form-group">
+                    <label>Global Announcement Banner (leave blank to hide)</label>
+                    <input type="text" name="announcement_banner" class="form-control" placeholder="e.g. Scheduled FX sync upgrade tonight at 11 PM UTC" value="{{.Settings.AnnouncementBanner}}">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Anomaly Alert Threshold ($ USD)</label>
+                        <input type="number" step="50" min="50" name="anomaly_threshold" class="form-control" value="{{printf "%.0f" .Settings.AnomalyThreshold}}">
+                    </div>
+                    <div class="form-group">
+                        <label>Default New User Budget ($ USD)</label>
+                        <input type="number" step="100" min="100" name="default_budget_goal" class="form-control" value="{{printf "%.0f" .Settings.DefaultBudgetGoal}}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="allow_registration" value="true" {{if .Settings.AllowRegistration}}checked{{end}}>
+                        <span>Allow public user self-registration on <code>/register</code></span>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-admin btn-block">Save Global Controls</button>
+            </form>
+        </div>
+
+        <!-- Platform-Wide Anomalies -->
+        <div class="card flex-1">
+            <div class="card-header-flex">
+                <div>
+                    <h3>🚨 Platform-Wide Risk &amp; Anomaly Feed</h3>
+                    <p class="subtitle">Latest flagged high-value or duplicate charges across users</p>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Vendor</th>
+                            <th>Amount</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Anomalies}}
+                        <tr class="table-row-warning">
+                            <td><span class="badge badge-ghost">{{.Username}}</span></td>
+                            <td class="text-bold">{{.Vendor}}</td>
+                            <td class="font-mono">${{printf "%.2f" .Amount}}</td>
+                            <td class="text-sm text-muted">{{.Reason}}</td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No active anomalies across the platform.</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Audit Logs -->
+    <div class="card">
+        <div class="card-header-flex">
+            <div>
+                <h3>📜 Global Security &amp; Ingestion Audit Log</h3>
+                <p class="subtitle">Last 20 administrative, authentication, CSV import, and webhook events</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Actor</th>
+                        <th>Event</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .AuditLogs}}
+                    <tr>
+                        <td class="font-mono text-muted text-sm">{{.CreatedAt}}</td>
+                        <td><span class="badge badge-ghost">{{.Username}}</span></td>
+                        <td><span class="badge badge-primary">{{.Action}}</span></td>
+                        <td class="font-mono text-sm">{{.Details}}</td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">No audit entries logged yet.</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Provision User Modal -->
+<div class="modal-backdrop" id="createUserModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>🛡️ Provision New Account</h3>
+            <button class="modal-close" onclick="closeCreateUserModal()">&times;</button>
+        </div>
+        <form action="/admin/users/create" method="POST">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" class="form-control" placeholder="e.g. ops_lead" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="ops@pulsematrix.ai" required>
+                </div>
+                <div class="form-group">
+                    <label>Temporary Password (min 6 chars)</label>
+                    <input type="password" name="password" minlength="6" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Account Role</label>
+                    <select name="role" class="form-control">
+                        <option value="user">Standard User</option>
+                        <option value="admin">Platform Administrator</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateUserModal()">Cancel</button>
+                <button type="submit" class="btn btn-admin">Provision Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCreateUserModal() { document.getElementById('createUserModal').style.display = 'flex'; }
+function closeCreateUserModal() { document.getElementById('createUserModal').style.display = 'none'; }
+</script>
+{{end}}

@@ -7,8 +7,11 @@ type User struct {
 	Username          string    `json:"username"`
 	Email             string    `json:"email"`
 	Password          string    `json:"-"`
+	Role              string    `json:"role"`   // user | admin
+	Status            string    `json:"status"` // active | suspended
 	PreferredCurrency string    `json:"preferredCurrency"`
 	MonthlyBudgetGoal float64   `json:"monthlyBudgetGoal"`
+	LastLoginAt       string    `json:"lastLoginAt"`
 	CreatedAt         time.Time `json:"createdAt"`
 }
 
@@ -21,6 +24,33 @@ type Category struct {
 	Type         string    `json:"type"` // expense | income | investment
 	MonthlyLimit float64   `json:"monthlyLimit"`
 	CreatedAt    time.Time `json:"createdAt"`
+}
+
+type CategoryBudgetStatus struct {
+	ID           int64   `json:"id"`
+	Name         string  `json:"name"`
+	Icon         string  `json:"icon"`
+	Color        string  `json:"color"`
+	Type         string  `json:"type"`
+	MonthlyLimit float64 `json:"monthlyLimit"`
+	Spent        float64 `json:"spent"`
+	Remaining    float64 `json:"remaining"`
+	Utilization  float64 `json:"utilization"`
+	Status       string  `json:"status"` // ok | warning | exceeded | unset
+}
+
+type SavingsGoal struct {
+	ID            int64   `json:"id"`
+	UserID        int64   `json:"userId"`
+	Name          string  `json:"name"`
+	Icon          string  `json:"icon"`
+	TargetAmount  float64 `json:"targetAmount"`
+	CurrentAmount float64 `json:"currentAmount"`
+	TargetDate    string  `json:"targetDate"`
+	Category      string  `json:"category"`
+	Status        string  `json:"status"` // active | completed
+	ProgressPct   float64 `json:"progressPct"`
+	Remaining     float64 `json:"remaining"`
 }
 
 type Transaction struct {
@@ -37,7 +67,7 @@ type Transaction struct {
 	Vendor           string    `json:"vendor"`
 	Description      string    `json:"description"`
 	Date             string    `json:"date"`
-	Source           string    `json:"source"` // manual | ai_ocr | bank_sync | csv_import
+	Source           string    `json:"source"` // manual | ai_ocr | bank_sync | csv_import | payment_app_api | sms_auto_sync
 	PaymentMethod    string    `json:"paymentMethod"`
 	IsRecurring      bool      `json:"isRecurring"`
 	IsAnomaly        bool      `json:"isAnomaly"`
@@ -76,16 +106,16 @@ type FinancialHealth struct {
 }
 
 type AIParsedReceipt struct {
-	Vendor          string   `json:"vendor"`
-	Amount          float64  `json:"amount"`
-	Currency        string   `json:"currency"`
-	SuggestedCategory string `json:"suggestedCategory"`
-	Date            string   `json:"date"`
-	PaymentMethod   string   `json:"paymentMethod"`
-	ConfidenceScore float64  `json:"confidenceScore"`
-	IsAnomaly       bool     `json:"isAnomaly"`
-	AnomalyReason   string   `json:"anomalyReason"`
-	RawSummary      string   `json:"rawSummary"`
+	Vendor            string  `json:"vendor"`
+	Amount            float64 `json:"amount"`
+	Currency          string  `json:"currency"`
+	SuggestedCategory string  `json:"suggestedCategory"`
+	Date              string  `json:"date"`
+	PaymentMethod     string  `json:"paymentMethod"`
+	ConfidenceScore   float64 `json:"confidenceScore"`
+	IsAnomaly         bool    `json:"isAnomaly"`
+	AnomalyReason     string  `json:"anomalyReason"`
+	RawSummary        string  `json:"rawSummary"`
 }
 
 type AIChatMessage struct {
@@ -111,13 +141,47 @@ type CategorySpend struct {
 }
 
 type BankWebhookPayload struct {
-	AccountID       string  `json:"accountId"`
-	TransactionID   string  `json:"transactionId"`
-	Amount          float64 `json:"amount"`
-	Currency        string  `json:"currency"`
-	Merchant        string  `json:"merchant"`
-	Category        string  `json:"category"`
-	Date            string  `json:"date"`
-	Pending         bool    `json:"pending"`
-	SecurityToken   string  `json:"securityToken"`
+	AccountID     string  `json:"accountId"`
+	TransactionID string  `json:"transactionId"`
+	Amount        float64 `json:"amount"`
+	Currency      string  `json:"currency"`
+	Merchant      string  `json:"merchant"`
+	Category      string  `json:"category"`
+	Date          string  `json:"date"`
+	Pending       bool    `json:"pending"`
+	SecurityToken string  `json:"securityToken"`
+}
+
+type AdminUserSummary struct {
+	ID                int64
+	Username          string
+	Email             string
+	Role              string
+	Status            string
+	PreferredCurrency string
+	MonthlyBudgetGoal float64
+	TxCount           int
+	TotalSpend        float64
+	SubCount          int
+	LastLoginAt       string
+	CreatedAt         string
+}
+
+type PlatformStats struct {
+	TotalUsers        int
+	ActiveUsers       int
+	SuspendedUsers    int
+	AdminCount        int
+	TotalTransactions int
+	TotalVolumeUSD    float64
+	TotalAnomalies    int
+	ActiveSubs        int
+	TotalGoals        int
+}
+
+type SystemSettings struct {
+	AllowRegistration  bool
+	AnnouncementBanner string
+	AnomalyThreshold   float64
+	DefaultBudgetGoal  float64
 }
