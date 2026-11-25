@@ -32,9 +32,9 @@
         <div class="card metric-card">
             <div class="card-header-flex">
                 <span class="card-label">Platform Ledger Volume</span>
-                <span class="badge badge-success">USD Normalized</span>
+                <span class="badge badge-success">{{.CurrencyCode}} Live</span>
             </div>
-            <div class="metric-value">${{printf "%.2f" .Stats.TotalVolumeUSD}}</div>
+            <div class="metric-value">{{dispWhole .Stats.TotalVolumeUSD .DisplayRate .CurrencySymbol}}</div>
             <div class="progress-labels">
                 <span>{{.Stats.TotalTransactions}} Total Entries</span>
                 <span>{{.Stats.TotalGoals}} Savings Goals</span>
@@ -48,7 +48,7 @@
             </div>
             <div class="metric-value text-warning">{{.Stats.TotalAnomalies}}</div>
             <div class="progress-labels">
-                <span>Threshold: ${{printf "%.0f" .Settings.AnomalyThreshold}}</span>
+                <span>Threshold: {{dispWhole .Settings.AnomalyThreshold .DisplayRate .CurrencySymbol}}</span>
                 <span>Cross-tenant alerts</span>
             </div>
         </div>
@@ -56,7 +56,7 @@
         <div class="card metric-card">
             <div class="card-header-flex">
                 <span class="card-label">Recurring Services</span>
-                <span class="badge badge-ghost">SaaS Engine</span>
+                <span class="badge badge-cyan">AutoPay Engine</span>
             </div>
             <div class="metric-value">{{.Stats.ActiveSubs}}</div>
             <div class="progress-labels">
@@ -91,7 +91,7 @@
                         <th>User</th>
                         <th>Role</th>
                         <th>Status</th>
-                        <th>Ledger Activity</th>
+                        <th>Ledger Activity ({{.CurrencyCode}})</th>
                         <th>Last Login</th>
                         <th>Admin Actions</th>
                     </tr>
@@ -102,7 +102,7 @@
                         <td>
                             <div class="vendor-cell">
                                 <span class="text-bold">{{.Username}}{{if eq .ID $.AdminID}} <span class="badge badge-ghost">You</span>{{end}}</span>
-                                <span class="text-muted text-sm">{{.Email}} • Joined {{.CreatedAt}}</span>
+                                <span class="text-muted text-sm">{{.Email}} • {{.PreferredCurrency}} • Joined {{.CreatedAt}}</span>
                             </div>
                         </td>
                         <td>
@@ -113,7 +113,7 @@
                         </td>
                         <td>
                             <div class="vendor-cell">
-                                <span class="font-mono text-bold">${{printf "%.2f" .TotalSpend}}</span>
+                                <span class="font-mono text-bold">{{dispWhole .TotalSpend $.DisplayRate $.CurrencySymbol}}</span>
                                 <span class="text-muted text-sm">{{.TxCount}} txns • {{.SubCount}} subs</span>
                             </div>
                         </td>
@@ -123,7 +123,7 @@
                             <div class="inline-actions">
                                 <form action="/admin/users/toggle-role" method="POST" style="display:inline;">
                                     <input type="hidden" name="id" value="{{.ID}}">
-                                    <button type="submit" class="btn btn-sm btn-secondary" title="Switch User/Admin Role">
+                                    <button type="submit" class="btn btn-sm btn-secondary">
                                         {{if eq .Role "admin"}}Demote{{else}}Make Admin{{end}}
                                     </button>
                                 </form>
@@ -155,7 +155,6 @@
 
     <!-- Global Controls + Anomalies Row -->
     <div class="charts-row">
-        <!-- Global Platform Settings -->
         <div class="card flex-1">
             <div class="card-header-flex">
                 <div>
@@ -166,16 +165,16 @@
             <form action="/admin/settings" method="POST">
                 <div class="form-group">
                     <label>Global Announcement Banner (leave blank to hide)</label>
-                    <input type="text" name="announcement_banner" class="form-control" placeholder="e.g. Scheduled FX sync upgrade tonight at 11 PM UTC" value="{{.Settings.AnnouncementBanner}}">
+                    <input type="text" name="announcement_banner" class="form-control" placeholder="e.g. Live INR & multi-currency FX engine v4.0 online!" value="{{.Settings.AnnouncementBanner}}">
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Anomaly Alert Threshold ($ USD)</label>
-                        <input type="number" step="50" min="50" name="anomaly_threshold" class="form-control" value="{{printf "%.0f" .Settings.AnomalyThreshold}}">
+                        <label>Anomaly Alert Threshold (₹ INR Base)</label>
+                        <input type="number" step="500" min="50" name="anomaly_threshold" class="form-control" value="{{printf "%.0f" .Settings.AnomalyThreshold}}">
                     </div>
                     <div class="form-group">
-                        <label>Default New User Budget ($ USD)</label>
-                        <input type="number" step="100" min="100" name="default_budget_goal" class="form-control" value="{{printf "%.0f" .Settings.DefaultBudgetGoal}}">
+                        <label>Default New User Budget (₹ INR Base)</label>
+                        <input type="number" step="1000" min="100" name="default_budget_goal" class="form-control" value="{{printf "%.0f" .Settings.DefaultBudgetGoal}}">
                     </div>
                 </div>
                 <div class="form-group">
@@ -188,7 +187,6 @@
             </form>
         </div>
 
-        <!-- Platform-Wide Anomalies -->
         <div class="card flex-1">
             <div class="card-header-flex">
                 <div>
@@ -211,7 +209,7 @@
                         <tr class="table-row-warning">
                             <td><span class="badge badge-ghost">{{.Username}}</span></td>
                             <td class="text-bold">{{.Vendor}}</td>
-                            <td class="font-mono">${{printf "%.2f" .Amount}}</td>
+                            <td class="font-mono">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
                             <td class="text-sm text-muted">{{.Reason}}</td>
                         </tr>
                         {{else}}

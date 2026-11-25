@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"net/http"
 	"regexp"
 	"strings"
@@ -22,6 +23,57 @@ import (
 
 var validHexColorRe = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
 
+// formatWithCommas formats numbers cleanly (Indian grouping for ₹, standard 3-digit grouping otherwise).
+func formatWithCommas(val float64, symbol string, decimals int) string {
+	neg := val < 0
+	if neg {
+		val = -val
+	}
+	formatStr := fmt.Sprintf("%%.%df", decimals)
+	raw := fmt.Sprintf(formatStr, val)
+
+	intPart := raw
+	fracPart := ""
+	if idx := strings.IndexByte(raw, '.'); idx >= 0 {
+		intPart = raw[:idx]
+		fracPart = raw[idx:]
+	}
+
+	var grouped string
+	n := len(intPart)
+	if symbol == "₹" && n > 3 {
+		last3 := intPart[n-3:]
+		rem := intPart[:n-3]
+		var chunks []string
+		for len(rem) > 2 {
+			chunks = append([]string{rem[len(rem)-2:]}, chunks...)
+			rem = rem[:len(rem)-2]
+		}
+		if len(rem) > 0 {
+			chunks = append([]string{rem}, chunks...)
+		}
+		grouped = strings.Join(chunks, ",") + "," + last3
+	} else if n > 3 {
+		var chunks []string
+		rem := intPart
+		for len(rem) > 3 {
+			chunks = append([]string{rem[len(rem)-3:]}, chunks...)
+			rem = rem[:len(rem)-3]
+		}
+		if len(rem) > 0 {
+			chunks = append([]string{rem}, chunks...)
+		}
+		grouped = strings.Join(chunks, ",")
+	} else {
+		grouped = intPart
+	}
+
+	if neg {
+		return "-" + symbol + grouped + fracPart
+	}
+	return symbol + grouped + fracPart
+}
+
 func main() {
 	cfg := config.Load()
 
@@ -31,26 +83,54 @@ func main() {
 	}
 	defer database.Close()
 
-	// Guarantee a default Platform Administrator exists on startup
 	if err := database.EnsureAdminAccount(cfg.AdminUsername, cfg.AdminEmail, cfg.AdminPassword); err != nil {
 		log.Printf("Warning: admin bootstrap check: %v", err)
 	}
 
-	// Initialize Services
 	aiService := services.NewAIService(cfg)
 	currencyService := services.NewCurrencyService(cfg)
 	intelService := services.NewIntelligenceService(database)
 
-	// Template Helper Functions
 	funcMap := template.FuncMap{
+		"dispMoney": func(amount, rate float64, symbol string) string {
+			if rate <= 0 {
+				rate = 1.0
+			}
+			if symbol == "" {
+				symbol = "₹"
+			}
+			return formatWithCommas(amount*rate, symbol, 2)
+		},
+		"dispWhole": func(amount, rate float64, symbol string) string {
+			if rate <= 0 {
+				rate = 1.0
+			}
+			if symbol == "" {
+				symbol = "₹"
+			}
+			return formatWithCommas(math.Round(amount*rate), symbol, 0)
+		},
+		"dispMoneySigned": func(amount, rate float64, symbol string) string {
+			if rate <= 0 {
+				rate = 1.0
+			}
+			if symbol == "" {
+				symbol = "₹"
+			}
+			v := amount * rate
+			if v < 0 {
+				return formatWithCommas(v, symbol, 2)
+			}
+			return "+" + formatWithCommas(v, symbol, 2)
+		},
 		"formatMoney": func(f float64) string {
 			if f < 0 {
-				return fmt.Sprintf("-$%.2f", -f)
+				return formatWithCommas(f, "₹", 2)
 			}
-			return fmt.Sprintf("+$%.2f", f)
+			return "+" + formatWithCommas(f, "₹", 2)
 		},
 		"formatMoneyPlain": func(f float64) string {
-			return fmt.Sprintf("$%.2f", f)
+			return formatWithCommas(f, "₹", 2)
 		},
 		"absVal": func(f float64) float64 {
 			if f < 0 {
@@ -92,7 +172,7 @@ func main() {
 		"safeBorderStyle": func(hex string) template.HTMLAttr {
 			c := strings.TrimSpace(hex)
 			if !validHexColorRe.MatchString(c) {
-				c = "#6366f1"
+				c = "#10b981"
 			}
 			return template.HTMLAttr(fmt.Sprintf(`style="border-left: 3px solid %s;"`, c))
 		},
@@ -108,7 +188,7 @@ func main() {
 		"safeBgColor": func(hex string) template.HTMLAttr {
 			c := strings.TrimSpace(hex)
 			if !validHexColorRe.MatchString(c) {
-				c = "#6366f1"
+				c = "#10b981"
 			}
 			return template.HTMLAttr(fmt.Sprintf(`style="background:%s;"`, c))
 		},
@@ -125,12 +205,10 @@ func main() {
 		)
 	}
 
-	// Auth standalone templates (separate User Login, Admin Login, and Register)
 	loginTmpl := template.Must(template.New("login.html").Funcs(funcMap).ParseFiles("templates/login.html"))
 	adminLoginTmpl := template.Must(template.New("admin_login.html").Funcs(funcMap).ParseFiles("templates/admin_login.html"))
 	regTmpl := template.Must(template.New("register.html").Funcs(funcMap).ParseFiles("templates/register.html"))
 
-	// Application View Templates
 	dashTmpl := page("dashboard.html")
 	txnTmpl := page("transactions.html")
 	goalsTmpl := page("goals.html")
@@ -140,7 +218,6 @@ func main() {
 	bankSyncTmpl := page("bank_sync.html")
 	adminTmpl := page("admin.html")
 
-	// Handlers
 	authH := &handlers.AuthHandler{
 		DB:                 database,
 		LoginTemplate:      loginTmpl,
@@ -148,18 +225,17 @@ func main() {
 		RegisterTemplate:   regTmpl,
 		JWTSecret:          cfg.JWTSecret,
 	}
-	dashH := handlers.NewDashboardHandler(database, dashTmpl, intelService)
+	dashH := handlers.NewDashboardHandler(database, dashTmpl, intelService, currencyService)
 	txnH := &handlers.TransactionHandler{DB: database, Templates: txnTmpl, CurrencyService: currencyService}
-	goalsH := handlers.NewGoalsHandler(database, goalsTmpl)
-	analyticsH := &handlers.AnalyticsHandler{DB: database, Templates: analyticsTmpl, IntelService: intelService}
-	subH := &handlers.SubscriptionsHandler{DB: database, Templates: subTmpl}
-	aiH := handlers.NewAIHandler(database, aiService, intelService, aiAdvisorTmpl)
+	goalsH := handlers.NewGoalsHandler(database, goalsTmpl, currencyService)
+	analyticsH := &handlers.AnalyticsHandler{DB: database, Templates: analyticsTmpl, IntelService: intelService, CurrencyService: currencyService}
+	subH := &handlers.SubscriptionsHandler{DB: database, Templates: subTmpl, CurrencyService: currencyService}
+	aiH := handlers.NewAIHandler(database, aiService, intelService, currencyService, aiAdvisorTmpl)
 	bankH := handlers.NewBankSyncHandler(database, bankSyncTmpl, aiService, currencyService, cfg.JWTSecret)
-	adminH := handlers.NewAdminHandler(database, adminTmpl)
+	adminH := handlers.NewAdminHandler(database, adminTmpl, currencyService)
 
 	r := mux.NewRouter()
 
-	// Health check endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if err := database.Ping(); err != nil {
@@ -167,13 +243,11 @@ func main() {
 			_ = json.NewEncoder(w).Encode(map[string]string{"status": "unhealthy", "error": err.Error()})
 			return
 		}
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "pulsematrix-ai", "version": "3.0"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "pulsematrix-ai", "version": "4.0", "baseCurrency": "INR"})
 	}).Methods("GET")
 
-	// Static Assets Server
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	// Public Auth Routes (Separate User & Admin Portals)
 	r.HandleFunc("/login", authH.ShowLogin).Methods("GET")
 	r.HandleFunc("/login", authH.Login).Methods("POST")
 	r.HandleFunc("/admin/login", authH.ShowAdminLogin).Methods("GET")
@@ -182,12 +256,10 @@ func main() {
 	r.HandleFunc("/register", authH.Register).Methods("POST")
 	r.HandleFunc("/logout", authH.Logout).Methods("GET", "POST")
 
-	// Payment App & SMS Integration Endpoints
 	r.HandleFunc("/api/webhooks/bank", bankH.WebhookAPI).Methods("POST")
 	r.HandleFunc("/api/webhooks/payment", bankH.PaymentAppWebhookAPI).Methods("POST")
 	r.HandleFunc("/api/v1/ingest/sms", bankH.SMSIngestionAPI).Methods("POST")
 
-	// Protected Admin Portal Routes (JWT + Admin Role Required)
 	adminRouter := r.PathPrefix("/admin").Subrouter()
 	adminRouter.Use(middleware.Auth(cfg.JWTSecret, database))
 	adminRouter.Use(middleware.RequireAdmin())
@@ -200,13 +272,11 @@ func main() {
 	adminRouter.HandleFunc("/users/delete", adminH.DeleteUser).Methods("POST")
 	adminRouter.HandleFunc("/settings", adminH.UpdatePlatformSettings).Methods("POST")
 
-	// Protected User Routes (JWT Required)
 	authed := r.PathPrefix("").Subrouter()
 	authed.Use(middleware.Auth(cfg.JWTSecret, database))
 
 	authed.HandleFunc("/", dashH.Show).Methods("GET")
 
-	// Transactions + Edit + Anomaly Resolution + CSV Import/Export
 	authed.HandleFunc("/transactions", txnH.List).Methods("GET")
 	authed.HandleFunc("/transactions/add", txnH.Add).Methods("POST")
 	authed.HandleFunc("/transactions/edit", txnH.Edit).Methods("POST")
@@ -216,7 +286,6 @@ func main() {
 	authed.HandleFunc("/transactions/export/csv", txnH.ExportCSV).Methods("GET")
 	authed.HandleFunc("/transactions/template/csv", txnH.ExportTemplateCSV).Methods("GET")
 
-	// Budgets, Custom Categories & Savings Goals Hub
 	authed.HandleFunc("/goals", goalsH.Show).Methods("GET")
 	authed.HandleFunc("/goals/add", goalsH.AddGoal).Methods("POST")
 	authed.HandleFunc("/goals/contribute", goalsH.ContributeGoal).Methods("POST")
@@ -224,7 +293,6 @@ func main() {
 	authed.HandleFunc("/budgets/update", goalsH.UpdateCategoryBudget).Methods("POST")
 	authed.HandleFunc("/categories/add", goalsH.AddCategory).Methods("POST")
 
-	// Analytics, Subscriptions, AI Advisor, Integrations, Settings
 	authed.HandleFunc("/analytics", analyticsH.Show).Methods("GET")
 	authed.HandleFunc("/subscriptions", subH.Show).Methods("GET")
 	authed.HandleFunc("/subscriptions/add", subH.Add).Methods("POST")
@@ -233,8 +301,8 @@ func main() {
 	authed.HandleFunc("/ai-advisor", aiH.ShowAdvisor).Methods("GET")
 	authed.HandleFunc("/bank-sync", bankH.Show).Methods("GET")
 	authed.HandleFunc("/settings/update", authH.UpdateSettings).Methods("POST")
+	authed.HandleFunc("/settings/currency", authH.SwitchCurrency).Methods("POST")
 
-	// REST API Endpoints
 	authed.HandleFunc("/api/ai/parse-receipt", aiH.ParseReceiptAPI).Methods("POST")
 	authed.HandleFunc("/api/ai/advisor", aiH.AdvisorChatAPI).Methods("POST")
 	authed.HandleFunc("/api/reports/monthly", analyticsH.TrendsJSON).Methods("GET")
@@ -247,7 +315,7 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	log.Printf("🚀 PulseMatrix AI Platform v3.0 running at http://localhost:%s", cfg.Port)
+	log.Printf("🚀 PulseMatrix AI v4.0 (INR Bento Grid Edition) running at http://localhost:%s", cfg.Port)
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}

@@ -17,10 +17,19 @@ func NewIntelligenceService(database *db.DB) *IntelligenceService {
 	return &IntelligenceService{db: database}
 }
 
-// ComputeFinancialHealth calculates score (0-100), rating, savings rate, and actionable advice.
+// ComputeFinancialHealth calculates score (0-100), rating, savings rate, burn-rate forecast, and actionable advice.
 func (s *IntelligenceService) ComputeFinancialHealth(userID int64) (*models.FinancialHealth, error) {
 	today := time.Now()
 	startOfMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+	daysInMonth := time.Date(today.Year(), today.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	dayOfMonth := today.Day()
+	if dayOfMonth < 1 {
+		dayOfMonth = 1
+	}
+	daysRemaining := daysInMonth - dayOfMonth + 1
+	if daysRemaining < 1 {
+		daysRemaining = 1
+	}
 
 	var monthlyIncome, monthlySpend float64
 
@@ -30,7 +39,6 @@ func (s *IntelligenceService) ComputeFinancialHealth(userID int64) (*models.Fina
 		JOIN categories c ON t.category_id = c.id
 		WHERE t.user_id = ? AND c.type = 'income' AND t.date >= ?`, userID, startOfMonth).Scan(&monthlyIncome)
 
-	// Include uncategorized transactions (category_id IS NULL) as expenses
 	_ = s.db.QueryRow(`
 		SELECT COALESCE(SUM(t.amount), 0)
 		FROM transactions t
@@ -40,10 +48,9 @@ func (s *IntelligenceService) ComputeFinancialHealth(userID int64) (*models.Fina
 	var budgetGoal float64
 	err := s.db.QueryRow(`SELECT monthly_budget_goal FROM users WHERE id = ?`, userID).Scan(&budgetGoal)
 	if err != nil || budgetGoal <= 0 {
-		budgetGoal = 4500.0
+		budgetGoal = 75000.0
 	}
 
-	// Normalize active subscriptions to monthly run rate
 	var subSpend float64
 	_ = s.db.QueryRow(`
 		SELECT COALESCE(SUM(
@@ -71,8 +78,10 @@ func (s *IntelligenceService) ComputeFinancialHealth(userID int64) (*models.Fina
 	}
 
 	budgetUtil := (monthlySpend / budgetGoal) * 100.0
+	dailyBurnRate := monthlySpend / float64(dayOfMonth)
+	projectedSpend := dailyBurnRate * float64(daysInMonth)
+	safeDailyAllowance := math.Max(0, (budgetGoal-monthlySpend)/float64(daysRemaining))
 
-	// Calculate Score (Base 100)
 	score := 100
 	if savingsRate < 10 {
 		score -= 25
@@ -125,19 +134,19 @@ func (s *IntelligenceService) ComputeFinancialHealth(userID int64) (*models.Fina
 
 	recommendations := []string{}
 	if savingsRate < 20 {
-		recommendations = append(recommendations, fmt.Sprintf("Boost net savings rate (currently %.1f%%) by setting up an automated 15%% salary sweep.", savingsRate))
+		recommendations = append(recommendations, fmt.Sprintf("Boost net savings rate (currently %.1f%%) with an automated monthly SIP sweep on payday.", savingsRate))
 	} else {
-		recommendations = append(recommendations, fmt.Sprintf("Great savings rate of %.1f%%! Reinvest excess net capital ($%.2f) into automated dollar-cost averaging.", savingsRate, netSavings))
+		recommendations = append(recommendations, fmt.Sprintf("Strong savings rate of %.1f%%! Channel surplus capital into automated index fund SIPs or savings goals.", savingsRate))
 	}
 
 	if anomalyCount > 0 {
-		recommendations = append(recommendations, fmt.Sprintf("Review %d anomaly alert(s) in the Transactions tab (duplicate vendor or surge spend).", anomalyCount))
+		recommendations = append(recommendations, fmt.Sprintf("Review %d flagged anomaly alert(s) in Transactions to catch duplicate or surge charges.", anomalyCount))
 	}
 
-	if subWeight > 10 {
-		recommendations = append(recommendations, fmt.Sprintf("Active recurring subscriptions account for %.1f%% of total monthly expenditure ($%.2f/mo).", subWeight, subSpend))
+	if projectedSpend > budgetGoal {
+		recommendations = append(recommendations, fmt.Sprintf("At current burn pace, projected month-end spend exceeds your target. Keep discretionary spend under %.0f/day.", safeDailyAllowance))
 	} else {
-		recommendations = append(recommendations, "Subscription footprint is lean and well controlled.")
+		recommendations = append(recommendations, fmt.Sprintf("Your spend velocity is well-paced with %d day(s) remaining in this cycle.", daysRemaining))
 	}
 
 	return &models.FinancialHealth{
@@ -149,13 +158,76 @@ func (s *IntelligenceService) ComputeFinancialHealth(userID int64) (*models.Fina
 		SavingsRate:        math.Round(savingsRate*10) / 10,
 		SubscriptionWeight: math.Round(subWeight*10) / 10,
 		BudgetUtilization:  math.Round(budgetUtil*10) / 10,
+		DailyBurnRate:      dailyBurnRate,
+		ProjectedSpend:     projectedSpend,
+		SafeDailyAllowance: safeDailyAllowance,
+		DaysRemaining:      daysRemaining,
 		TopCategory:        topCategory,
 		AnomalyCount:       anomalyCount,
 		Recommendations:    recommendations,
 	}, nil
 }
 
-// FetchCategoryBreakdown computes expense distributions per category.
+// FetchDailyHeatmap builds a 30-day GitHub-style daily expenditure intensity grid.
+func (s *IntelligenceService) FetchDailyHeatmap(userID int64, days int) []models.DailyHeatmapCell {
+	if days <= 0 {
+		days = 30
+	}
+	today := time.Now()
+	startDate := today.AddDate(0, 0, -(days - 1)).Format("2006-01-02")
+
+	totals := make(map[string]float64)
+	var maxVal float64
+
+	if rows, err := s.db.Query(`
+		SELECT t.date, COALESCE(SUM(t.amount), 0)
+		FROM transactions t
+		LEFT JOIN categories c ON t.category_id = c.id
+		WHERE t.user_id = ? AND COALESCE(c.type, 'expense') = 'expense' AND t.date >= ?
+		GROUP BY t.date`, userID, startDate); err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var dt string
+			var amt float64
+			if err := rows.Scan(&dt, &amt); err == nil {
+				totals[dt] = amt
+				if amt > maxVal {
+					maxVal = amt
+				}
+			}
+		}
+	}
+
+	cells := make([]models.DailyHeatmapCell, 0, days)
+	for i := days - 1; i >= 0; i-- {
+		d := today.AddDate(0, 0, -i)
+		iso := d.Format("2006-01-02")
+		amt := totals[iso]
+		level := 0
+		if amt > 0 && maxVal > 0 {
+			ratio := amt / maxVal
+			switch {
+			case ratio >= 0.75:
+				level = 4
+			case ratio >= 0.45:
+				level = 3
+			case ratio >= 0.18:
+				level = 2
+			default:
+				level = 1
+			}
+		}
+		cells = append(cells, models.DailyHeatmapCell{
+			Date:   iso,
+			Label:  d.Format("02 Jan"),
+			Amount: amt,
+			Level:  level,
+		})
+	}
+	return cells
+}
+
+// FetchCategoryBreakdown computes expense distributions per category (base INR).
 func (s *IntelligenceService) FetchCategoryBreakdown(userID int64) ([]models.CategorySpend, error) {
 	rows, err := s.db.Query(`
 		SELECT COALESCE(c.name, 'Miscellaneous') as name,
@@ -193,7 +265,7 @@ func (s *IntelligenceService) FetchCategoryBreakdown(userID int64) ([]models.Cat
 	return list, nil
 }
 
-// FetchMonthlyTrends retrieves 6-month historical trajectory data.
+// FetchMonthlyTrends retrieves 6-month historical trajectory data (base INR).
 func (s *IntelligenceService) FetchMonthlyTrends(userID int64) ([]models.MonthlyTrend, error) {
 	trends := make([]models.MonthlyTrend, 0, 6)
 	now := time.Now()
@@ -201,7 +273,7 @@ func (s *IntelligenceService) FetchMonthlyTrends(userID int64) ([]models.Monthly
 
 	var budgetGoal float64
 	if err := s.db.QueryRow(`SELECT monthly_budget_goal FROM users WHERE id = ?`, userID).Scan(&budgetGoal); err != nil || budgetGoal <= 0 {
-		budgetGoal = 4500.0
+		budgetGoal = 75000.0
 	}
 
 	for i := 5; i >= 0; i-- {

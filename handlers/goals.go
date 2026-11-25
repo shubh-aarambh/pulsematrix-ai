@@ -11,22 +11,24 @@ import (
 	"expense-matrix/db"
 	"expense-matrix/middleware"
 	"expense-matrix/models"
+	"expense-matrix/services"
 )
 
 type GoalsHandler struct {
-	DB        *db.DB
-	Templates *template.Template
+	DB              *db.DB
+	Templates       *template.Template
+	CurrencyService *services.CurrencyService
 }
 
-func NewGoalsHandler(database *db.DB, tmpl *template.Template) *GoalsHandler {
-	return &GoalsHandler{DB: database, Templates: tmpl}
+func NewGoalsHandler(database *db.DB, tmpl *template.Template, cs *services.CurrencyService) *GoalsHandler {
+	return &GoalsHandler{DB: database, Templates: tmpl, CurrencyService: cs}
 }
 
 func (h *GoalsHandler) Show(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int64)
 	username, _ := r.Context().Value(middleware.UsernameKey).(string)
 
-	viewCtx := GetBaseContext(h.DB, userID, username)
+	viewCtx := GetBaseContext(h.DB, h.CurrencyService, userID, username)
 
 	today := time.Now()
 	startOfMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
@@ -241,3 +243,4 @@ func (h *GoalsHandler) AddCategory(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/goals?success=Custom+category+added", http.StatusSeeOther)
 }
+

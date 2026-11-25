@@ -6,7 +6,7 @@
     <title>{{.Title}} - PulseMatrix AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
     <script>
@@ -18,23 +18,23 @@
 </head>
 <body>
     <div class="app-layout">
-        <!-- Sidebar Navigation -->
+        <!-- Frosted Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
-                <a href="/" class="brand-logo" style="text-decoration:none;">
+                <a href="/" class="brand-logo">
                     <div class="logo-mark">
                         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                     </div>
                     <span class="brand-text">Pulse<span class="brand-accent">Matrix</span></span>
                 </a>
-                <div class="brand-badge">v3.0</div>
+                <div class="brand-badge">v4.0</div>
             </div>
 
             <div class="nav-section-label">WORKSPACE</div>
             <nav class="nav-menu">
                 <a href="/" class="nav-item {{if eq .ActivePage "dashboard"}}active{{end}}">
                     <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    <span class="nav-label">Dashboard</span>
+                    <span class="nav-label">Command Center</span>
                 </a>
                 <a href="/transactions" class="nav-item {{if eq .ActivePage "transactions"}}active{{end}}">
                     <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
@@ -43,7 +43,7 @@
                 <a href="/goals" class="nav-item {{if eq .ActivePage "goals"}}active{{end}}">
                     <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
                     <span class="nav-label">Budgets &amp; Goals</span>
-                    <span class="nav-badge nav-badge-indigo">NEW</span>
+                    <span class="nav-badge nav-badge-cyan">HUB</span>
                 </a>
                 <a href="/analytics" class="nav-item {{if eq .ActivePage "analytics"}}active{{end}}">
                     <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
@@ -60,7 +60,7 @@
                 </a>
                 <a href="/bank-sync" class="nav-item {{if eq .ActivePage "bank-sync"}}active{{end}}">
                     <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                    <span class="nav-label">Integrations</span>
+                    <span class="nav-label">UPI &amp; Webhooks</span>
                 </a>
 
                 {{if .IsAdmin}}
@@ -78,7 +78,7 @@
                     <div class="user-avatar {{if .IsAdmin}}avatar-admin{{end}}">{{if .Username}}{{initial .Username}}{{else}}U{{end}}</div>
                     <div class="user-info">
                         <div class="user-name">{{if .Username}}{{.Username}}{{else}}User{{end}}</div>
-                        <div class="user-role">{{if .IsAdmin}}Platform Admin{{else}}Pro Member{{end}}</div>
+                        <div class="user-role">{{if .IsAdmin}}Platform Admin{{else}}{{.CurrencyCode}} Workspace{{end}}</div>
                     </div>
                     <svg class="gear-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </div>
@@ -88,48 +88,43 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
+        <!-- Main Workspace -->
         <main class="main-content">
             {{if .AnnouncementBanner}}
             <div class="global-announcement">
-                <span class="announcement-dot">📢</span>
+                <span>📢</span>
                 <span>{{.AnnouncementBanner}}</span>
             </div>
             {{end}}
 
-            <!-- Top Navbar Header -->
+            <!-- Topbar Header with 1-Click Live Currency Switcher -->
             <header class="topbar">
                 <div class="topbar-left">
                     <div class="topbar-title-row">
                         <button class="btn-mobile-menu" onclick="toggleMobileSidebar()" aria-label="Toggle Menu">&#9776;</button>
                         <h1 class="page-title">{{.Title}}</h1>
                     </div>
-                    <span class="system-time"><span class="status-indicator"></span> Realtime • {{if .CurrentDate}}{{.CurrentDate}}{{else}}Active{{end}}{{if .IsAdmin}} • <strong class="text-warning">Admin Session</strong>{{end}}</span>
+                    <span class="system-time"><span class="status-indicator"></span> Live Terminal • {{.CurrentDate}} • Display: <strong>{{.CurrencySymbol}} {{.CurrencyCode}}</strong>{{if .IsAdmin}} • <strong class="text-warning">Admin Mode</strong>{{end}}</span>
                 </div>
                 <div class="topbar-right">
-                    <button class="btn btn-icon-pill" onclick="openCommandPalette()" title="Quick Command Palette (Ctrl+K)">
-                        <span>⌘K</span>
-                    </button>
-                    <button class="btn btn-icon-pill" onclick="openFXModal()" title="Live Currency Converter">
-                        <span>💱 FX</span>
-                    </button>
-                    <button class="btn btn-icon-pill" onclick="toggleTheme()" id="themeToggleBtn" title="Switch Light/Dark Theme">
-                        <span id="themeIcon">☀️</span>
-                    </button>
-                    <button class="btn btn-secondary-sm" onclick="openReceiptModal()">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                        <span>Scan Receipt</span>
-                    </button>
-                    <button class="btn btn-primary-sm" onclick="openAddTxModal()">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>New Entry</span>
-                    </button>
+                    <!-- 1-Click Live Currency Swap -->
+                    <form action="/settings/currency" method="POST" class="currency-switcher" title="Swap Display Currency Live">
+                        <button type="submit" name="currency" value="INR" class="curr-btn {{if eq .CurrencyCode "INR"}}active{{end}}">₹ INR</button>
+                        <button type="submit" name="currency" value="USD" class="curr-btn {{if eq .CurrencyCode "USD"}}active{{end}}">$ USD</button>
+                        <button type="submit" name="currency" value="EUR" class="curr-btn {{if eq .CurrencyCode "EUR"}}active{{end}}">€ EUR</button>
+                        <button type="submit" name="currency" value="GBP" class="curr-btn {{if eq .CurrencyCode "GBP"}}active{{end}}">£ GBP</button>
+                    </form>
+
+                    <button class="btn btn-icon-pill" onclick="openCommandPalette()" title="Quick Command Palette (Ctrl+K)">⌘K</button>
+                    <button class="btn btn-icon-pill" onclick="openFXModal()" title="Live FX Calculator">💱 FX</button>
+                    <button class="btn btn-icon-pill" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle Dark/Light Grid"><span id="themeIcon">☀️</span></button>
+                    <button class="btn btn-secondary-sm" onclick="openReceiptModal()">📷 AI Scan</button>
+                    <button class="btn btn-primary-sm" onclick="openAddTxModal()">+ New Entry</button>
                 </div>
             </header>
 
             {{template "flash.html" .}}
 
-            <!-- Page Specific Content -->
             <div class="content-body">
                 {{template "content" .}}
             </div>
@@ -141,7 +136,7 @@
         <div class="modal-card cmd-card">
             <div class="cmd-search-row">
                 <span>🔍</span>
-                <input type="text" id="cmdSearchInput" class="cmd-input" placeholder="Type a command or page (e.g. goals, csv, fx, admin, ai)..." oninput="filterCommandPalette(this.value)">
+                <input type="text" id="cmdSearchInput" class="cmd-input" placeholder="Jump to page or action (e.g. goals, csv, fx, inr, admin)..." oninput="filterCommandPalette(this.value)">
                 <kbd class="cmd-kbd">ESC</kbd>
             </div>
             <div class="cmd-list" id="cmdList"></div>
@@ -152,7 +147,7 @@
     <div class="modal-backdrop" id="fxConverterModal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>💱 Live Multi-Currency Converter</h3>
+                <h3>💱 Live Multi-Currency FX Calculator</h3>
                 <button class="modal-close" onclick="closeFXModal()">&times;</button>
             </div>
             <div class="modal-body">
@@ -160,17 +155,17 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Amount</label>
-                        <input type="number" step="0.01" id="fxAmount" class="form-control" value="100" oninput="computeFXConversion()">
+                        <input type="number" step="0.01" id="fxAmount" class="form-control" value="1000" oninput="computeFXConversion()">
                     </div>
                     <div class="form-group">
                         <label>From Currency</label>
                         <select id="fxFrom" class="form-control" onchange="computeFXConversion()">
-                            <option value="USD">USD ($)</option>
                             <option value="INR" selected>INR (₹)</option>
+                            <option value="USD">USD ($)</option>
                             <option value="EUR">EUR (€)</option>
                             <option value="GBP">GBP (£)</option>
-                            <option value="CAD">CAD ($)</option>
-                            <option value="AUD">AUD ($)</option>
+                            <option value="CAD">CAD (C$)</option>
+                            <option value="AUD">AUD (A$)</option>
                             <option value="JPY">JPY (¥)</option>
                         </select>
                     </div>
@@ -182,8 +177,8 @@
                         <option value="INR">INR (₹)</option>
                         <option value="EUR">EUR (€)</option>
                         <option value="GBP">GBP (£)</option>
-                        <option value="CAD">CAD ($)</option>
-                        <option value="AUD">AUD ($)</option>
+                        <option value="CAD">CAD (C$)</option>
+                        <option value="AUD">AUD (A$)</option>
                         <option value="JPY">JPY (¥)</option>
                     </select>
                 </div>
@@ -203,13 +198,13 @@
     <div class="modal-backdrop" id="aiReceiptModal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>🤖 Autonomous Receipt &amp; NLP Parser</h3>
+                <h3>🤖 Autonomous Receipt &amp; SMS Parser</h3>
                 <button class="modal-close" onclick="closeReceiptModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="modal-subtitle">Paste raw receipt or SMS text (e.g. <code>"Paid Rs 450.00 to Starbucks Coffee via Google Pay UPI"</code>)</p>
+                <p class="modal-subtitle">Paste raw receipt or bank SMS (e.g. <code>"Paid Rs 450.00 to Starbucks Coffee via Google Pay UPI"</code>)</p>
                 <div class="form-group">
-                    <textarea id="aiRawText" class="form-control" rows="4" placeholder="Paste unformatted receipt or bank SMS text..."></textarea>
+                    <textarea id="aiRawText" class="form-control" rows="4" placeholder="Paste unformatted receipt or UPI SMS text..."></textarea>
                 </div>
                 <div id="aiParsePreview" class="ai-preview-box hidden"></div>
             </div>
@@ -221,7 +216,7 @@
         </div>
     </div>
 
-    <!-- Add Transaction Modal -->
+    <!-- Add Transaction Modal (Defaults to INR & UPI) -->
     <div class="modal-backdrop" id="addTxModal">
         <div class="modal-card">
             <div class="modal-header">
@@ -233,7 +228,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Merchant / Vendor</label>
-                            <input type="text" name="vendor" class="form-control" placeholder="e.g. Amazon, Stripe, Uber" required>
+                            <input type="text" name="vendor" class="form-control" placeholder="e.g. Swiggy, Uber, Amazon" required>
                         </div>
                         <div class="form-group">
                             <label>Amount</label>
@@ -242,13 +237,13 @@
                         <div class="form-group">
                             <label>Currency</label>
                             <select name="currency" class="form-control">
-                                <option value="USD">USD ($)</option>
-                                <option value="INR">INR (₹)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="GBP">GBP (£)</option>
-                                <option value="CAD">CAD ($)</option>
-                                <option value="AUD">AUD ($)</option>
-                                <option value="JPY">JPY (¥)</option>
+                                <option value="INR" {{if eq .CurrencyCode "INR"}}selected{{end}}>INR (₹)</option>
+                                <option value="USD" {{if eq .CurrencyCode "USD"}}selected{{end}}>USD ($)</option>
+                                <option value="EUR" {{if eq .CurrencyCode "EUR"}}selected{{end}}>EUR (€)</option>
+                                <option value="GBP" {{if eq .CurrencyCode "GBP"}}selected{{end}}>GBP (£)</option>
+                                <option value="CAD" {{if eq .CurrencyCode "CAD"}}selected{{end}}>CAD (C$)</option>
+                                <option value="AUD" {{if eq .CurrencyCode "AUD"}}selected{{end}}>AUD (A$)</option>
+                                <option value="JPY" {{if eq .CurrencyCode "JPY"}}selected{{end}}>JPY (¥)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -266,11 +261,11 @@
                         <div class="form-group">
                             <label>Payment Method</label>
                             <select name="payment_method" class="form-control">
+                                <option value="UPI">UPI / Google Pay / PhonePe</option>
                                 <option value="Credit Card">Credit Card</option>
                                 <option value="Debit Card">Debit Card</option>
-                                <option value="UPI">UPI / Google Pay / PhonePe</option>
-                                <option value="Apple Pay">Apple Pay</option>
-                                <option value="Bank Transfer">Bank Transfer / ACH</option>
+                                <option value="Bank Transfer">NEFT / IMPS / ACH</option>
+                                <option value="Apple Pay">Apple Pay / Wallet</option>
                             </select>
                         </div>
                     </div>
@@ -306,16 +301,16 @@
                     <div class="form-group">
                         <label>Preferred Display Currency</label>
                         <select name="preferredCurrency" class="form-control">
-                            <option value="USD" {{if .User}}{{if eq .User.PreferredCurrency "USD"}}selected{{end}}{{end}}>USD ($)</option>
-                            <option value="INR" {{if .User}}{{if eq .User.PreferredCurrency "INR"}}selected{{end}}{{end}}>INR (₹)</option>
-                            <option value="EUR" {{if .User}}{{if eq .User.PreferredCurrency "EUR"}}selected{{end}}{{end}}>EUR (€)</option>
-                            <option value="GBP" {{if .User}}{{if eq .User.PreferredCurrency "GBP"}}selected{{end}}{{end}}>GBP (£)</option>
-                            <option value="CAD" {{if .User}}{{if eq .User.PreferredCurrency "CAD"}}selected{{end}}{{end}}>CAD ($)</option>
+                            <option value="INR" {{if eq .CurrencyCode "INR"}}selected{{end}}>INR (₹) — Indian Rupee</option>
+                            <option value="USD" {{if eq .CurrencyCode "USD"}}selected{{end}}>USD ($) — US Dollar</option>
+                            <option value="EUR" {{if eq .CurrencyCode "EUR"}}selected{{end}}>EUR (€) — Euro</option>
+                            <option value="GBP" {{if eq .CurrencyCode "GBP"}}selected{{end}}>GBP (£) — British Pound</option>
+                            <option value="CAD" {{if eq .CurrencyCode "CAD"}}selected{{end}}>CAD (C$) — Canadian Dollar</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Monthly Spend Target ($ USD)</label>
-                        <input type="number" step="50" name="monthlyBudgetGoal" class="form-control" value="{{if .User}}{{.User.MonthlyBudgetGoal}}{{else}}4500{{end}}">
+                        <label>Monthly Spend Target (Base INR ₹)</label>
+                        <input type="number" step="1000" name="monthlyBudgetGoal" class="form-control" value="{{if .User}}{{printf "%.0f" .User.MonthlyBudgetGoal}}{{else}}75000{{end}}">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -326,7 +321,14 @@
         </div>
     </div>
 
-    <script>window.__PM_IS_ADMIN = {{if .IsAdmin}}true{{else}}false{{end}};</script>
+    <script>
+        window.__PM_IS_ADMIN = {{if .IsAdmin}}true{{else}}false{{end}};
+        window.__PM_CURRENCY = {
+            code: "{{.CurrencyCode}}",
+            symbol: "{{.CurrencySymbol}}",
+            rate: {{.DisplayRate}}
+        };
+    </script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>

@@ -14,18 +14,20 @@ import (
 )
 
 type AIHandler struct {
-	DB           *db.DB
-	AIService    *services.AIService
-	IntelService *services.IntelligenceService
-	Templates    *template.Template
+	DB              *db.DB
+	AIService       *services.AIService
+	IntelService    *services.IntelligenceService
+	CurrencyService *services.CurrencyService
+	Templates       *template.Template
 }
 
-func NewAIHandler(database *db.DB, ai *services.AIService, intel *services.IntelligenceService, tmpl *template.Template) *AIHandler {
+func NewAIHandler(database *db.DB, ai *services.AIService, intel *services.IntelligenceService, cs *services.CurrencyService, tmpl *template.Template) *AIHandler {
 	return &AIHandler{
-		DB:           database,
-		AIService:    ai,
-		IntelService: intel,
-		Templates:    tmpl,
+		DB:              database,
+		AIService:       ai,
+		IntelService:    intel,
+		CurrencyService: cs,
+		Templates:       tmpl,
 	}
 }
 
@@ -33,14 +35,14 @@ func (h *AIHandler) ShowAdvisor(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int64)
 	username, _ := r.Context().Value(middleware.UsernameKey).(string)
 
-	viewCtx := GetBaseContext(h.DB, userID, username)
+	viewCtx := GetBaseContext(h.DB, h.CurrencyService, userID, username)
 
 	health, err := h.IntelService.ComputeFinancialHealth(userID)
 	if err != nil || health == nil {
 		health = &models.FinancialHealth{Score: 85, Rating: "Healthy"}
 	}
 
-	viewCtx["Title"] = "AI Financial Assistant - PulseMatrix AI"
+	viewCtx["Title"] = "AI Intelligence Strategist"
 	viewCtx["ActivePage"] = "ai-advisor"
 	viewCtx["Health"] = health
 
@@ -94,9 +96,17 @@ func (h *AIHandler) AdvisorChatAPI(w http.ResponseWriter, r *http.Request) {
 		health = &models.FinancialHealth{Score: 85, Rating: "Healthy", TopCategory: "None yet"}
 	}
 
+	currCode := "INR"
+	_ = h.DB.QueryRow(`SELECT preferred_currency FROM users WHERE id = ?`, userID).Scan(&currCode)
+	rate := 1.0
+	if h.CurrencyService != nil && currCode != "INR" {
+		rate = h.CurrencyService.RateBetween("INR", currCode)
+	}
+	sym := services.SymbolFor(currCode)
+
 	contextSummary := fmt.Sprintf(
-		"Monthly Income: $%.2f, Monthly Spend: $%.2f, Net Savings: $%.2f, Savings Rate: %.1f%%, Health Score: %d (%s), Top Category: %s, Active Anomalies: %d",
-		health.MonthlyIncome, health.MonthlySpend, health.NetSavings, health.SavingsRate, health.Score, health.Rating, health.TopCategory, health.AnomalyCount,
+		"Currency: %s, Monthly Income: %s%.2f, Monthly Spend: %s%.2f, Net Savings: %s%.2f, Savings Rate: %.1f%%, Daily Burn: %s%.0f/day, Health Score: %d (%s), Top Category: %s, Active Anomalies: %d",
+		currCode, sym, health.MonthlyIncome*rate, sym, health.MonthlySpend*rate, sym, health.NetSavings*rate, health.SavingsRate, sym, health.DailyBurnRate*rate, health.Score, health.Rating, health.TopCategory, health.AnomalyCount,
 	)
 
 	reply, err := h.AIService.GenerateFinancialAdvice(contextSummary, req.Query)

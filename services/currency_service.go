@@ -34,14 +34,33 @@ func (cs *CurrencyService) initDefaultRates() {
 	// Default fallback exchange rates (Base USD)
 	cs.ratesCache = map[string]float64{
 		"USD": 1.00,
+		"INR": 84.50,
 		"EUR": 0.92,
 		"GBP": 0.79,
-		"INR": 83.50,
-		"CAD": 1.36,
-		"AUD": 1.52,
-		"JPY": 155.20,
+		"CAD": 1.38,
+		"AUD": 1.53,
+		"JPY": 154.00,
 	}
-	// Leave lastFetch zero so the first conversion refreshes live rates once.
+}
+
+// SymbolFor returns the clean display symbol for a currency code.
+func SymbolFor(code string) string {
+	switch strings.ToUpper(strings.TrimSpace(code)) {
+	case "INR":
+		return "₹"
+	case "EUR":
+		return "€"
+	case "GBP":
+		return "£"
+	case "JPY":
+		return "¥"
+	case "CAD":
+		return "C$"
+	case "AUD":
+		return "A$"
+	default:
+		return "$"
+	}
 }
 
 // Convert converts an amount from source currency to target currency. Returns (convertedAmount, exchangeRate, error)
@@ -50,10 +69,10 @@ func (cs *CurrencyService) Convert(amount float64, from string, to string) (floa
 	to = strings.ToUpper(strings.TrimSpace(to))
 
 	if from == "" {
-		from = "USD"
+		from = "INR"
 	}
 	if to == "" {
-		to = "USD"
+		to = "INR"
 	}
 
 	if from == to {
@@ -74,7 +93,16 @@ func (cs *CurrencyService) Convert(amount float64, from string, to string) (floa
 	return converted, rate, nil
 }
 
-// GetRates fetches latest rates, using cache if refreshed within 1 hour.
+// RateBetween returns the multiplier from `from` currency to `to` currency.
+func (cs *CurrencyService) RateBetween(from, to string) float64 {
+	_, rate, err := cs.Convert(1.0, from, to)
+	if err != nil || rate <= 0 {
+		return 1.0
+	}
+	return rate
+}
+
+// GetRates fetches latest rates (Base USD), using cache if refreshed within 1 hour.
 func (cs *CurrencyService) GetRates() map[string]float64 {
 	cs.mu.RLock()
 	if !cs.lastFetch.IsZero() && time.Since(cs.lastFetch) < 1*time.Hour && len(cs.ratesCache) > 0 {
@@ -110,7 +138,6 @@ func (cs *CurrencyService) fetchLiveRates() (map[string]float64, error) {
 			fmt.Sprintf("https://api.exchangerate.host/live?access_key=%s", cs.cfg.ExchangeRateAPIKey),
 		)
 	}
-	// Always fall back to the free open ExchangeRate-API endpoint
 	urls = append(urls, "https://open.er-api.com/v6/latest/USD")
 
 	client := &http.Client{Timeout: 4 * time.Second}

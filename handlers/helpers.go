@@ -8,14 +8,16 @@ import (
 
 	"expense-matrix/db"
 	"expense-matrix/models"
+	"expense-matrix/services"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type ViewContext map[string]interface{}
 
-// GetBaseContext retrieves standard layout context required by base.html.
-func GetBaseContext(database *db.DB, userID int64, username string) ViewContext {
+// GetBaseContext retrieves standard layout context required by base.html,
+// including live INR -> PreferredCurrency conversion rate and currency symbol.
+func GetBaseContext(database *db.DB, cs *services.CurrencyService, userID int64, username string) ViewContext {
 	var user models.User
 	_ = database.QueryRow(`SELECT id, username, email, role, status, preferred_currency, monthly_budget_goal, COALESCE(last_login_at, '') FROM users WHERE id = ?`, userID).Scan(
 		&user.ID, &user.Username, &user.Email, &user.Role, &user.Status, &user.PreferredCurrency, &user.MonthlyBudgetGoal, &user.LastLoginAt,
@@ -27,11 +29,17 @@ func GetBaseContext(database *db.DB, userID int64, username string) ViewContext 
 		user.Role = "user"
 	}
 	if user.PreferredCurrency == "" {
-		user.PreferredCurrency = "USD"
+		user.PreferredCurrency = "INR"
 	}
 	if user.MonthlyBudgetGoal <= 0 {
-		user.MonthlyBudgetGoal = 4500.0
+		user.MonthlyBudgetGoal = 75000.0
 	}
+
+	displayRate := 1.0
+	if cs != nil && user.PreferredCurrency != "INR" {
+		displayRate = cs.RateBetween("INR", user.PreferredCurrency)
+	}
+	currencySymbol := services.SymbolFor(user.PreferredCurrency)
 
 	catRows, _ := database.Query(`SELECT id, name, icon, color, type, monthly_limit FROM categories WHERE user_id = ? ORDER BY name ASC`, userID)
 	categories := make([]models.Category, 0)
@@ -52,8 +60,11 @@ func GetBaseContext(database *db.DB, userID int64, username string) ViewContext 
 		"User":               user,
 		"UserRole":           user.Role,
 		"IsAdmin":            user.Role == "admin",
+		"CurrencyCode":       user.PreferredCurrency,
+		"CurrencySymbol":     currencySymbol,
+		"DisplayRate":        displayRate,
 		"AnnouncementBanner": sysSettings.AnnouncementBanner,
-		"CurrentDate":        now.Format("Jan 02, 2006"),
+		"CurrentDate":        now.Format("02 Jan 2006"),
 		"TodayISO":           now.Format("2006-01-02"),
 		"Categories":         categories,
 	}

@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS users (
     password            TEXT NOT NULL,
     role                TEXT NOT NULL DEFAULT 'user',
     status              TEXT NOT NULL DEFAULT 'active',
-    preferred_currency  TEXT NOT NULL DEFAULT 'USD',
-    monthly_budget_goal REAL NOT NULL DEFAULT 4500.0,
+    preferred_currency  TEXT NOT NULL DEFAULT 'INR',
+    monthly_budget_goal REAL NOT NULL DEFAULT 75000.0,
     last_login_at       TEXT DEFAULT '',
     created_at          DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS categories (
     user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name          TEXT NOT NULL,
     icon          TEXT NOT NULL DEFAULT '📦',
-    color         TEXT NOT NULL DEFAULT '#6366f1',
+    color         TEXT NOT NULL DEFAULT '#10b981',
     type          TEXT NOT NULL CHECK(type IN ('expense','income','investment')),
     monthly_limit REAL DEFAULT 0,
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -67,13 +67,13 @@ CREATE TABLE IF NOT EXISTS transactions (
     category_id       INTEGER REFERENCES categories(id) ON DELETE SET NULL,
     amount            REAL NOT NULL,
     original_amount   REAL NOT NULL,
-    original_currency TEXT NOT NULL DEFAULT 'USD',
+    original_currency TEXT NOT NULL DEFAULT 'INR',
     exchange_rate     REAL NOT NULL DEFAULT 1.0,
     vendor            TEXT NOT NULL DEFAULT '',
     description       TEXT NOT NULL DEFAULT '',
     date              DATE NOT NULL,
     source            TEXT NOT NULL DEFAULT 'manual',
-    payment_method    TEXT NOT NULL DEFAULT 'Credit Card',
+    payment_method    TEXT NOT NULL DEFAULT 'UPI',
     is_recurring      INTEGER NOT NULL DEFAULT 0,
     is_anomaly        INTEGER NOT NULL DEFAULT 0,
     anomaly_reason    TEXT DEFAULT '',
@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name              TEXT NOT NULL,
     amount            REAL NOT NULL,
-    currency          TEXT NOT NULL DEFAULT 'USD',
-    category_name     TEXT NOT NULL DEFAULT 'Subscriptions',
+    currency          TEXT NOT NULL DEFAULT 'INR',
+    category_name     TEXT NOT NULL DEFAULT 'Subscriptions & SaaS',
     billing_cycle     TEXT NOT NULL DEFAULT 'monthly',
     next_billing_date DATE NOT NULL,
     status            TEXT NOT NULL DEFAULT 'active',
@@ -133,17 +133,16 @@ CREATE INDEX IF NOT EXISTS idx_goals_user             ON savings_goals(user_id, 
 		return err
 	}
 
-	// Safe incremental migrations for existing databases
 	_ = db.ensureColumn("users", "role", "TEXT NOT NULL DEFAULT 'user'")
 	_ = db.ensureColumn("users", "status", "TEXT NOT NULL DEFAULT 'active'")
 	_ = db.ensureColumn("users", "last_login_at", "TEXT DEFAULT ''")
 
-	// Seed default platform settings
+	// Seed default INR-native platform settings
 	defaults := map[string]string{
 		"allow_registration":  "true",
 		"announcement_banner": "",
-		"anomaly_threshold":   "800",
-		"default_budget_goal": "4500",
+		"anomaly_threshold":   "25000",
+		"default_budget_goal": "75000",
 	}
 	for k, v := range defaults {
 		_, _ = db.Exec(`INSERT OR IGNORE INTO system_settings (key, value) VALUES (?, ?)`, k, v)
@@ -186,7 +185,7 @@ func (db *DB) EnsureAdminAccount(username, email, password string) error {
 	}
 	res, err := db.Exec(`
 		INSERT OR IGNORE INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal)
-		VALUES (?, ?, ?, 'admin', 'active', 'USD', 6000.0)`,
+		VALUES (?, ?, ?, 'admin', 'active', 'INR', 85000.0)`,
 		username, email, string(hashed),
 	)
 	if err != nil {
@@ -194,7 +193,7 @@ func (db *DB) EnsureAdminAccount(username, email, password string) error {
 	}
 	if adminID, err := res.LastInsertId(); err == nil && adminID > 0 {
 		_ = db.SeedDefaults(adminID)
-		_, _ = db.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'system_bootstrap', 'Default platform administrator initialized')`, adminID)
+		_, _ = db.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'system_bootstrap', 'Default platform administrator initialized (INR default)')`, adminID)
 	}
 	return nil
 }
@@ -204,8 +203,8 @@ func (db *DB) GetSystemSettings() models.SystemSettings {
 	s := models.SystemSettings{
 		AllowRegistration:  true,
 		AnnouncementBanner: "",
-		AnomalyThreshold:   800.0,
-		DefaultBudgetGoal:  4500.0,
+		AnomalyThreshold:   25000.0,
+		DefaultBudgetGoal:  75000.0,
 	}
 	rows, err := db.Query(`SELECT key, value FROM system_settings`)
 	if err != nil {
@@ -243,21 +242,21 @@ func (db *DB) SetSystemSetting(key, value string) error {
 	return err
 }
 
-// SeedDefaults creates default categories, sample transactions, subscriptions, and savings goals for a user.
+// SeedDefaults creates INR-native default categories, realistic transactions, subscriptions, and savings goals.
 func (db *DB) SeedDefaults(userID int64) error {
 	categories := []struct {
 		name, icon, color, typ string
 		limit                  float64
 	}{
 		{"Salary & Income", "💰", "#10b981", "income", 0},
-		{"Housing & Utilities", "🏠", "#3b82f6", "expense", 1500},
-		{"Food & Dining", "🍜", "#f59e0b", "expense", 600},
-		{"Technology & Cloud", "💻", "#6366f1", "expense", 400},
-		{"Travel & Transport", "✈️", "#06b6d4", "expense", 500},
-		{"Shopping & Retail", "🛍️", "#ec4899", "expense", 300},
-		{"Subscriptions & SaaS", "🎬", "#8b5cf6", "expense", 150},
-		{"Investments & Crypto", "📈", "#84cc16", "investment", 1000},
-		{"Miscellaneous", "📦", "#64748b", "expense", 200},
+		{"Housing & Utilities", "🏠", "#06b6d4", "expense", 35000},
+		{"Food & Dining", "🍜", "#f59e0b", "expense", 15000},
+		{"Technology & Cloud", "💻", "#14b8a6", "expense", 12000},
+		{"Travel & Transport", "✈️", "#0ea5e9", "expense", 10000},
+		{"Shopping & Retail", "🛍️", "#fb7185", "expense", 12000},
+		{"Subscriptions & SaaS", "🎬", "#eab308", "expense", 6000},
+		{"Investments & SIP", "📈", "#22c55e", "investment", 30000},
+		{"Miscellaneous", "📦", "#64748b", "expense", 5000},
 	}
 
 	for _, c := range categories {
@@ -275,6 +274,7 @@ func (db *DB) SeedDefaults(userID int64) error {
 	if err == nil && count == 0 {
 		today := time.Now()
 
+		// All normalized amounts stored in base INR (₹)
 		samples := []struct {
 			catName string
 			vendor  string
@@ -287,21 +287,21 @@ func (db *DB) SeedDefaults(userID int64) error {
 			anom    bool
 			reason  string
 		}{
-			{"Salary & Income", "Global Tech Corp", 6800.00, "Monthly Tech Lead Payroll Direct Deposit", "bank_sync", "Direct Deposit", 1, false, false, ""},
-			{"Housing & Utilities", "Apex Living Management", 1450.00, "Monthly Apartment Rent Payment", "bank_sync", "ACH Bank Transfer", 3, true, false, ""},
-			{"Technology & Cloud", "Amazon Web Services", 284.50, "AWS Cloud Architecture Infrastructure Usage", "ai_ocr", "Credit Card", 4, true, false, ""},
-			{"Technology & Cloud", "OpenAI / API Billing", 60.00, "LLM Enterprise API Credits", "ai_ocr", "Credit Card", 5, true, false, ""},
-			{"Food & Dining", "Sweetgreen Organic", 18.75, "Lunch Salad & Smoothie Bowl", "manual", "Apple Pay", 2, false, false, ""},
-			{"Food & Dining", "Whole Foods Market", 142.30, "Weekly Grocery & Gourmet Stock", "ai_ocr", "Credit Card", 6, false, false, ""},
-			{"Food & Dining", "Noma Fine Dining", 480.00, "Team Milestone Dinner - High Value Charge", "ai_ocr", "Credit Card", 7, false, true, "Surge Spend: 340% higher than category mean"},
-			{"Subscriptions & SaaS", "Netflix Premium 4K", 22.99, "Monthly Streaming Service Subscription", "bank_sync", "Credit Card", 10, true, false, ""},
-			{"Subscriptions & SaaS", "GitHub Copilot Enterprise", 19.00, "AI Developer Assistant Subscription", "bank_sync", "Credit Card", 12, true, false, ""},
-			{"Subscriptions & SaaS", "Spotify Premium", 10.99, "Audio Streaming Subscription", "bank_sync", "Credit Card", 14, true, false, ""},
-			{"Travel & Transport", "Uber Technologies", 34.50, "Airport Express Ride", "manual", "Apple Pay", 8, false, false, ""},
-			{"Travel & Transport", "Uber Technologies", 34.50, "Duplicate Charge Detected within 5 mins", "bank_sync", "Apple Pay", 8, false, true, "Potential Duplicate Billing Detected"},
-			{"Shopping & Retail", "Apple Store", 1299.00, "MacBook M3 Pro Workstation Upgrade", "ai_ocr", "Credit Card", 15, false, false, ""},
-			{"Investments & Crypto", "Vanguard Index Funds", 850.00, "Monthly Automated S&P 500 DCA Investment", "bank_sync", "ACH Bank Transfer", 18, true, false, ""},
-			{"Salary & Income", "Consulting Retainer", 1500.00, "AI Architecture Advisory Retainer", "manual", "Wire Transfer", 22, false, false, ""},
+			{"Salary & Income", "Apex FinTech Systems", 185000.00, "Monthly Principal Engineer Payroll NEFT", "bank_sync", "Bank Transfer", 1, false, false, ""},
+			{"Housing & Utilities", "Prestige Living Estates", 32000.00, "Monthly Apartment Rent & Maintenance", "bank_sync", "UPI AutoPay", 3, true, false, ""},
+			{"Technology & Cloud", "Amazon Web Services", 6450.00, "AWS Production Cluster & S3 Storage", "ai_ocr", "Credit Card", 4, true, false, ""},
+			{"Technology & Cloud", "OpenAI / Gemini API", 2400.00, "LLM Developer API Credits", "ai_ocr", "Credit Card", 5, true, false, ""},
+			{"Food & Dining", "Third Wave Coffee", 680.00, "Cold Brew & Sourdough Croissant", "payment_app_api", "Google Pay / UPI", 1, false, false, ""},
+			{"Food & Dining", "Swiggy Instamart", 3420.00, "Weekly Fresh Groceries & Pantry Stock", "sms_auto_sync", "PhonePe / UPI", 2, false, false, ""},
+			{"Food & Dining", "Taj Masala Kraft", 11800.00, "Team Milestone Dinner - High Value Dining", "ai_ocr", "Credit Card", 6, false, true, "Surge Spend: 310% higher than dining average"},
+			{"Subscriptions & SaaS", "Netflix Ultra HD 4K", 649.00, "Monthly Streaming Plan", "bank_sync", "UPI AutoPay", 8, true, false, ""},
+			{"Subscriptions & SaaS", "GitHub Copilot Pro", 1650.00, "AI Coding Assistant Subscription", "bank_sync", "Credit Card", 10, true, false, ""},
+			{"Subscriptions & SaaS", "Spotify Family Duo", 179.00, "Music Streaming Plan", "bank_sync", "UPI AutoPay", 12, true, false, ""},
+			{"Travel & Transport", "Uber Premier Airport", 1240.00, "Kempegowda Airport Express Cab", "payment_app_api", "Google Pay / UPI", 7, false, false, ""},
+			{"Travel & Transport", "Uber Premier Airport", 1240.00, "Duplicate Billing Detected within 4 mins", "bank_sync", "Google Pay / UPI", 7, false, true, "Potential Duplicate Billing Detected"},
+			{"Shopping & Retail", "Apple India Store", 14900.00, "AirPods Pro 2 & MagSafe Charger", "ai_ocr", "Credit Card", 14, false, false, ""},
+			{"Investments & SIP", "Zerodha Coin Nifty 50", 25000.00, "Automated Monthly Index Fund SIP", "bank_sync", "UPI AutoPay", 16, true, false, ""},
+			{"Salary & Income", "Architecture Advisory", 35000.00, "System Design Consulting Retainer", "manual", "IMPS Transfer", 19, false, false, ""},
 		}
 
 		for _, s := range samples {
@@ -318,7 +318,7 @@ func (db *DB) SeedDefaults(userID int64) error {
 				INSERT INTO transactions (
 					user_id, category_id, amount, original_amount, original_currency, exchange_rate,
 					vendor, description, date, source, payment_method, is_recurring, is_anomaly, anomaly_reason
-				) VALUES (?, ?, ?, ?, 'USD', 1.0, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				) VALUES (?, ?, ?, ?, 'INR', 1.0, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				userID, catIDPtr, s.amount, s.amount, s.vendor, s.desc, txDate, s.source, s.method,
 				s.rec, s.anom, s.reason,
 			)
@@ -329,18 +329,18 @@ func (db *DB) SeedDefaults(userID int64) error {
 			amt              float64
 			daysFromNow      int
 		}{
-			{"Netflix Premium", "monthly", "Subscriptions & SaaS", 22.99, 12},
-			{"AWS Cloud Services", "monthly", "Technology & Cloud", 284.50, 5},
-			{"GitHub Copilot", "monthly", "Subscriptions & SaaS", 19.00, 18},
-			{"Spotify Family", "monthly", "Subscriptions & SaaS", 16.99, 8},
-			{"OpenAI Enterprise", "monthly", "Technology & Cloud", 60.00, 20},
+			{"AWS Cloud Infrastructure", "monthly", "Technology & Cloud", 6450.00, 4},
+			{"Netflix Ultra HD 4K", "monthly", "Subscriptions & SaaS", 649.00, 9},
+			{"GitHub Copilot Pro", "monthly", "Subscriptions & SaaS", 1650.00, 14},
+			{"Spotify Family", "monthly", "Subscriptions & SaaS", 179.00, 7},
+			{"AI API Developer Tier", "monthly", "Technology & Cloud", 2400.00, 19},
 		}
 
 		for _, sub := range subs {
 			nextDate := today.AddDate(0, 0, sub.daysFromNow).Format("2006-01-02")
 			_, _ = db.Exec(`
 				INSERT INTO subscriptions (user_id, name, amount, currency, category_name, billing_cycle, next_billing_date, status, detected_pattern)
-				VALUES (?, ?, ?, 'USD', ?, ?, ?, 'active', 'Detected via recurring bank webhook')`,
+				VALUES (?, ?, ?, 'INR', ?, ?, ?, 'active', 'Detected via UPI AutoPay / Bank Sync')`,
 				userID, sub.name, sub.amt, sub.cat, sub.cycle, nextDate,
 			)
 		}
@@ -354,9 +354,9 @@ func (db *DB) SeedDefaults(userID int64) error {
 			target, current float64
 			monthsAhead     int
 		}{
-			{"6-Month Emergency Reserve", "🛡️", "Safety Net", 15000.0, 9400.0, 8},
-			{"Japan & Europe Travel Fund", "✈️", "Travel", 4500.0, 2850.0, 5},
-			{"Next-Gen AI Workstation", "💻", "Hardware", 3200.0, 2100.0, 3},
+			{"6-Month Emergency Reserve", "🛡️", "Safety Net", 500000.0, 345000.0, 8},
+			{"Japan & Europe Travel Fund", "✈️", "Travel", 250000.0, 162000.0, 5},
+			{"MacBook Pro M4 Workstation", "💻", "Hardware", 220000.0, 155000.0, 3},
 		}
 		for _, g := range goals {
 			tDate := today.AddDate(0, g.monthsAhead, 0).Format("2006-01-02")

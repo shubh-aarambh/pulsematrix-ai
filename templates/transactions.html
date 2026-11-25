@@ -7,8 +7,8 @@
             <strong class="font-mono">{{.TxCount}}</strong>
         </div>
         <div class="summary-pill">
-            <span class="text-muted">Filtered Volume</span>
-            <strong class="font-mono">${{printf "%.2f" .TotalVolume}}</strong>
+            <span class="text-muted">Filtered Volume ({{.CurrencyCode}})</span>
+            <strong class="font-mono text-success">{{dispMoney .TotalVolume .DisplayRate .CurrencySymbol}}</strong>
         </div>
         <a href="/transactions{{if not .OnlyAnomalies}}?anomaly=1{{end}}" class="summary-pill summary-pill-link {{if .OnlyAnomalies}}pill-warning-active{{end}}">
             <span class="text-muted">Anomalies</span>
@@ -54,7 +54,7 @@
                         <th>Payment</th>
                         <th>Source</th>
                         <th>Original</th>
-                        <th>USD Normalized</th>
+                        <th>Amount ({{.CurrencyCode}})</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -87,7 +87,7 @@
                         <td><span class="badge badge-ghost">{{.PaymentMethod}}</span></td>
                         <td><span class="source-badge source-{{.Source}}">{{.Source}}</span></td>
                         <td><span class="font-mono text-sm">{{printf "%.2f" .OriginalAmount}} {{.OriginalCurrency}}</span></td>
-                        <td><span class="text-bold font-mono text-lg">${{printf "%.2f" .Amount}}</span></td>
+                        <td><span class="text-bold font-mono text-lg">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</span></td>
                         <td>
                             <div class="inline-actions">
                                 <button type="button" class="btn btn-sm btn-secondary"
@@ -141,12 +141,12 @@
                     <div class="form-group">
                         <label>Currency</label>
                         <select name="currency" id="editTxCurrency" class="form-control">
-                            <option value="USD">USD ($)</option>
                             <option value="INR">INR (₹)</option>
+                            <option value="USD">USD ($)</option>
                             <option value="EUR">EUR (€)</option>
                             <option value="GBP">GBP (£)</option>
-                            <option value="CAD">CAD ($)</option>
-                            <option value="AUD">AUD ($)</option>
+                            <option value="CAD">CAD (C$)</option>
+                            <option value="AUD">AUD (A$)</option>
                             <option value="JPY">JPY (¥)</option>
                         </select>
                     </div>
@@ -191,7 +191,7 @@
             <div class="modal-body">
                 <p class="modal-subtitle">
                     Upload a CSV statement with columns: <code>Date, Vendor, Amount, Currency, Category, Description, Payment Method</code>.
-                    Multi-currency rows are converted to USD automatically using live FX rates.
+                    Multi-currency rows are normalized to INR automatically using live FX rates.
                 </p>
                 <div class="form-group">
                     <label>Select CSV File (.csv)</label>

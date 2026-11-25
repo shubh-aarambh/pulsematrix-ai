@@ -218,7 +218,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	nowStr := time.Now().Format("2006-01-02 15:04")
 	res, err := h.DB.Exec(
-		`INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal, last_login_at) VALUES (?, ?, ?, 'user', 'active', 'USD', ?, ?)`,
+		`INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal, last_login_at) VALUES (?, ?, ?, 'user', 'active', 'INR', ?, ?)`,
 		username, email, string(hashed), settings.DefaultBudgetGoal, nowStr,
 	)
 	if err != nil {
@@ -234,7 +234,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	userID, _ := res.LastInsertId()
 	_ = h.DB.SeedDefaults(userID)
-	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'user_registered', ?)`, userID, fmt.Sprintf("New user %s (%s) registered", username, email))
+	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'user_registered', ?)`, userID, fmt.Sprintf("New user %s (%s) registered (INR default)", username, email))
 
 	if err := h.issueSessionCookie(w, r, userID, username, "user"); err != nil {
 		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
@@ -268,7 +268,7 @@ func (h *AuthHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	budgetStr := strings.TrimSpace(r.FormValue("monthlyBudgetGoal"))
 
 	allowedCurrencies := map[string]bool{
-		"USD": true, "EUR": true, "GBP": true, "INR": true, "CAD": true, "AUD": true, "JPY": true,
+		"INR": true, "USD": true, "EUR": true, "GBP": true, "CAD": true, "AUD": true, "JPY": true,
 	}
 	if allowedCurrencies[currency] {
 		_, _ = h.DB.Exec(`UPDATE users SET preferred_currency = ? WHERE id = ?`, currency, userID)
@@ -280,4 +280,21 @@ func (h *AuthHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/?success=Account+settings+updated", http.StatusSeeOther)
+}
+
+// SwitchCurrency allows instant 1-click currency swapping (INR / USD / EUR / GBP / CAD) from the topbar.
+func (h *AuthHandler) SwitchCurrency(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(int64)
+	currency := strings.ToUpper(strings.TrimSpace(r.FormValue("currency")))
+	allowed := map[string]bool{
+		"INR": true, "USD": true, "EUR": true, "GBP": true, "CAD": true, "AUD": true, "JPY": true,
+	}
+	if allowed[currency] {
+		_, _ = h.DB.Exec(`UPDATE users SET preferred_currency = ? WHERE id = ?`, currency, userID)
+	}
+	back := r.Header.Get("Referer")
+	if back == "" || !strings.HasPrefix(back, "http") {
+		back = "/"
+	}
+	http.Redirect(w, r, back, http.StatusSeeOther)
 }

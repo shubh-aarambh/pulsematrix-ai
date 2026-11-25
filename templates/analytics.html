@@ -4,10 +4,10 @@
     <div class="card bg-gradient-dark">
         <div class="card-header-flex">
             <div>
-                <h2>Intelligence Radar & Risk Metrics</h2>
-                <p class="subtitle">Automated statistical anomaly detection & portfolio pace score</p>
+                <h2>Intelligence Radar &amp; Risk Metrics</h2>
+                <p class="subtitle">Automated statistical anomaly detection, burn forecast &amp; portfolio pace ({{.CurrencyCode}})</p>
             </div>
-            <div class="badge badge-primary">Pulse Matrix Engine v2.6</div>
+            <div class="badge badge-primary">Pulse Matrix Engine v4.0</div>
         </div>
         <div class="radar-stats-grid">
             <div class="radar-stat-box">
@@ -18,31 +18,64 @@
             <div class="radar-stat-box">
                 <span class="stat-title">Net Savings Rate</span>
                 <span class="stat-number text-success">{{.Health.SavingsRate}}%</span>
-                <span class="stat-desc">${{printf "%.2f" .Health.NetSavings}} Monthly Surplus</span>
+                <span class="stat-desc">{{dispWhole .Health.NetSavings .DisplayRate .CurrencySymbol}} Monthly Surplus</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">SaaS Subscription Burden</span>
-                <span class="stat-number text-warning">{{.Health.SubscriptionWeight}}%</span>
-                <span class="stat-desc">Of total monthly burn</span>
+                <span class="stat-title">Daily Burn Avg</span>
+                <span class="stat-number text-cyan">{{dispWhole .Health.DailyBurnRate .DisplayRate .CurrencySymbol}}</span>
+                <span class="stat-desc">Projected EOM: {{dispWhole .Health.ProjectedSpend .DisplayRate .CurrencySymbol}}</span>
             </div>
             <div class="radar-stat-box">
                 <span class="stat-title">Flagged Anomalies</span>
                 <span class="stat-number text-danger">{{.Health.AnomalyCount}}</span>
-                <span class="stat-desc">Duplicate or price surge alerts</span>
+                <span class="stat-desc">Duplicate or surge spend alerts</span>
             </div>
+        </div>
+    </div>
+
+    <!-- 30-Day Spending Heatmap -->
+    <div class="card">
+        <div class="card-header-flex">
+            <div>
+                <h3>🔥 30-Day Daily Expenditure Matrix</h3>
+                <p class="subtitle">Visual intensity of daily outflow across the past 30 days ({{.CurrencyCode}})</p>
+            </div>
+            <span class="badge badge-cyan">Safe Cap: {{dispWhole .Health.SafeDailyAllowance .DisplayRate .CurrencySymbol}}/day</span>
+        </div>
+        <div class="heatmap-grid">
+            {{range .Heatmap}}
+            <div class="hm-cell hm-level-{{.Level}}" title="{{.Label}}: {{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}"></div>
+            {{end}}
+        </div>
+        <div class="heatmap-legend">
+            <span>30 days ago</span>
+            <div class="legend-swatches">
+                <span>Less</span>
+                <span class="hm-level-0"></span>
+                <span class="hm-level-1"></span>
+                <span class="hm-level-2"></span>
+                <span class="hm-level-3"></span>
+                <span class="hm-level-4"></span>
+                <span>More</span>
+            </div>
+            <span>Today</span>
         </div>
     </div>
 
     <!-- Charts Row -->
     <div class="charts-row">
         <div class="card flex-1">
-            <h3>Monthly Expenditure Velocity</h3>
+            <div class="card-header-flex">
+                <h3>Monthly Net Surplus Velocity ({{.CurrencyCode}})</h3>
+            </div>
             <div class="chart-wrapper">
                 <canvas id="analyticsVelocityChart"></canvas>
             </div>
         </div>
         <div class="card flex-1">
-            <h3>Category Breakdown Heatmap</h3>
+            <div class="card-header-flex">
+                <h3>Category Spend Distribution ({{.CurrencyCode}})</h3>
+            </div>
             <div class="chart-wrapper">
                 <canvas id="analyticsCategoryChart"></canvas>
             </div>

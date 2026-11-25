@@ -3,26 +3,26 @@
     <!-- Header Metrics -->
     <div class="metrics-row">
         <div class="card metric-card">
-            <span class="card-label">Monthly SaaS Run Rate</span>
-            <div class="metric-value">${{printf "%.2f" .TotalMonthly}}</div>
-            <span class="text-muted">Extrapolated annual: ${{printf "%.2f" .TotalYearly}}</span>
+            <span class="card-label">Monthly SaaS Run Rate ({{.CurrencyCode}})</span>
+            <div class="metric-value">{{dispMoney .TotalMonthly .DisplayRate .CurrencySymbol}}</div>
+            <span class="text-muted">Extrapolated annual: {{dispWhole .TotalYearly .DisplayRate .CurrencySymbol}}</span>
         </div>
         <div class="card metric-card">
             <span class="card-label">Active Subscriptions</span>
             <div class="metric-value">{{.ActiveSubCount}} Services</div>
-            <span class="text-muted">Scanned via Bank Webhooks</span>
+            <span class="text-muted">Tracked via UPI AutoPay &amp; Webhooks</span>
         </div>
-        <div class="card metric-card bg-gradient-purple">
-            <span class="card-label">Optimization Goal</span>
-            <div class="metric-value text-success">~$120.00/mo Potential Savings</div>
-            <span class="text-muted">Unused AWS EBS & streaming consolidation</span>
+        <div class="card metric-card bg-gradient-emerald">
+            <span class="card-label">Optimization Opportunity</span>
+            <div class="metric-value text-success">~20% Potential Trim</div>
+            <span class="text-muted">Audit idle cloud instances &amp; overlapping plans</span>
         </div>
     </div>
 
     <!-- Active Subscriptions List -->
-    <div class="card mt-4">
+    <div class="card">
         <div class="card-header-flex">
-            <h3>Active Recurring Services & Renewal Tracker</h3>
+            <h3>Active Recurring Services &amp; Renewal Tracker</h3>
             <button class="btn btn-primary" onclick="openAddSubModal()">+ Add Subscription</button>
         </div>
 
@@ -34,7 +34,7 @@
                         <th>Category</th>
                         <th>Billing Cycle</th>
                         <th>Next Billing Date</th>
-                        <th>Amount</th>
+                        <th>Amount ({{.CurrencyCode}})</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -51,7 +51,7 @@
                         <td><span class="badge badge-ghost">{{.CategoryName}}</span></td>
                         <td><span class="badge badge-outline">{{.BillingCycle}}</span></td>
                         <td><span class="font-mono">{{.NextBillingDate}}</span></td>
-                        <td><span class="text-bold font-mono">${{printf "%.2f" .Amount}}</span></td>
+                        <td><span class="text-bold font-mono">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</span></td>
                         <td>
                             <span class="badge badge-{{if eq .Status "active"}}success{{else}}danger{{end}}">{{.Status}}</span>
                         </td>
@@ -89,14 +89,15 @@
                     <input type="text" name="name" class="form-control" placeholder="e.g. Netflix, AWS, GitHub Copilot" required>
                 </div>
                 <div class="form-group">
-                    <label>Amount ($)</label>
-                    <input type="number" step="0.01" name="amount" class="form-control" placeholder="19.99" required>
+                    <label>Amount (₹ INR)</label>
+                    <input type="number" step="1" name="amount" class="form-control" placeholder="649" required>
                 </div>
                 <div class="form-group">
                     <label>Billing Cycle</label>
                     <select name="billing_cycle" class="form-control">
                         <option value="monthly">Monthly</option>
                         <option value="yearly">Yearly</option>
+                        <option value="weekly">Weekly</option>
                     </select>
                 </div>
                 <div class="form-group">

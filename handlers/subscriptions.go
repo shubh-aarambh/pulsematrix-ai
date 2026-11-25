@@ -10,18 +10,20 @@ import (
 	"expense-matrix/db"
 	"expense-matrix/middleware"
 	"expense-matrix/models"
+	"expense-matrix/services"
 )
 
 type SubscriptionsHandler struct {
-	DB        *db.DB
-	Templates *template.Template
+	DB              *db.DB
+	Templates       *template.Template
+	CurrencyService *services.CurrencyService
 }
 
 func (h *SubscriptionsHandler) Show(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int64)
 	username, _ := r.Context().Value(middleware.UsernameKey).(string)
 
-	viewCtx := GetBaseContext(h.DB, userID, username)
+	viewCtx := GetBaseContext(h.DB, h.CurrencyService, userID, username)
 
 	rows, err := h.DB.Query(`
 		SELECT id, name, amount, currency, category_name, billing_cycle, next_billing_date, status, detected_pattern
@@ -56,7 +58,7 @@ func (h *SubscriptionsHandler) Show(w http.ResponseWriter, r *http.Request) {
 
 	totalYearly := totalMonthly * 12.0
 
-	viewCtx["Title"] = "Subscriptions & Recurring Radar - PulseMatrix AI"
+	viewCtx["Title"] = "Subscriptions Radar"
 	viewCtx["ActivePage"] = "subscriptions"
 	viewCtx["Subscriptions"] = list
 	viewCtx["ActiveSubCount"] = activeCount
@@ -96,7 +98,7 @@ func (h *SubscriptionsHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.DB.Exec(`
 		INSERT INTO subscriptions (user_id, name, amount, currency, category_name, billing_cycle, next_billing_date, status, detected_pattern)
-		VALUES (?, ?, ?, 'USD', ?, ?, ?, 'active', 'User Configured')`,
+		VALUES (?, ?, ?, 'INR', ?, ?, ?, 'active', 'User Configured')`,
 		userID, name, amt, catName, cycle, nextDate,
 	)
 	if err != nil {

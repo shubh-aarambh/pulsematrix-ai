@@ -66,10 +66,10 @@ func (s *AIService) parseHeuristically(raw string) *models.AIParsedReceipt {
 	res := &models.AIParsedReceipt{
 		Vendor:            "Merchant",
 		Amount:            0.0,
-		Currency:          "USD",
+		Currency:          "INR",
 		SuggestedCategory: "Miscellaneous",
 		Date:              time.Now().Format("2006-01-02"),
-		PaymentMethod:     "Credit Card",
+		PaymentMethod:     "UPI",
 		ConfidenceScore:   0.85,
 		RawSummary:        text,
 	}

@@ -30,7 +30,7 @@ func Load() *Config {
 		GeminiAPIKey:       getEnv("GEMINI_API_KEY", ""),
 		GeminiModel:        getEnv("GEMINI_MODEL", "gemini-2.0-flash"),
 		ExchangeRateAPIKey: getEnv("EXCHANGERATE_API_KEY", ""),
-		BaseCurrency:       getEnv("BASE_CURRENCY", "USD"),
+		BaseCurrency:       getEnv("BASE_CURRENCY", "INR"),
 		EnableAIServices:   getEnv("ENABLE_AI_SERVICES", "true") == "true",
 		AdminUsername:      getEnv("ADMIN_USERNAME", "admin"),
 		AdminEmail:         getEnv("ADMIN_EMAIL", "admin@pulsematrix.ai"),
@@ -45,8 +45,6 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// loadDotEnv reads KEY=VALUE pairs from a local .env file without overriding
-// environment variables already set by the OS or cloud platform.
 func loadDotEnv(path string) {
 	f, err := os.Open(path)
 	if err != nil {

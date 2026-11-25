@@ -50,7 +50,7 @@ func (h *BankSyncHandler) Show(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int64)
 	username, _ := r.Context().Value(middleware.UsernameKey).(string)
 
-	viewCtx := GetBaseContext(h.DB, userID, username)
+	viewCtx := GetBaseContext(h.DB, h.CurrencyService, userID, username)
 
 	rows, err := h.DB.Query(`
 		SELECT id, action, details, created_at
@@ -76,7 +76,7 @@ func (h *BankSyncHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	viewCtx["Title"] = "Payment Apps & Open Webhooks - PulseMatrix AI"
+	viewCtx["Title"] = "Integrations & Webhooks"
 	viewCtx["ActivePage"] = "bank-sync"
 	viewCtx["Logs"] = logs
 
@@ -84,7 +84,6 @@ func (h *BankSyncHandler) Show(w http.ResponseWriter, r *http.Request) {
 	_ = h.Templates.Execute(w, viewCtx)
 }
 
-// WebhookAPI handles Plaid & traditional bank webhook feeds.
 func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -107,7 +106,7 @@ func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Currency == "" {
-		payload.Currency = "USD"
+		payload.Currency = "INR"
 	} else {
 		payload.Currency = strings.ToUpper(strings.TrimSpace(payload.Currency))
 	}
@@ -117,7 +116,7 @@ func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 		txDate = time.Now().Format("2006-01-02")
 	}
 
-	baseAmount, rate, _ := h.CurrencyService.Convert(payload.Amount, payload.Currency, "USD")
+	baseAmount, rate, _ := h.CurrencyService.Convert(payload.Amount, payload.Currency, "INR")
 
 	var catID *int64
 	if payload.Category != "" {
@@ -144,7 +143,7 @@ func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 		INSERT INTO transactions (
 			user_id, category_id, amount, original_amount, original_currency, exchange_rate,
 			vendor, description, date, source, payment_method, is_recurring, is_anomaly, anomaly_reason
-		) VALUES (?, ?, ?, ?, ?, ?, ?, 'Plaid Automated Bank Ingestion', ?, 'bank_sync', 'Bank Webhook', 0, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, 'Automated Bank Ingestion', ?, 'bank_sync', 'Bank Webhook', 0, ?, ?)`,
 		userID, catID, baseAmount, payload.Amount, payload.Currency, rate, payload.Merchant, txDate, isAnomaly, anomalyReason,
 	)
 
@@ -154,7 +153,7 @@ func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'bank_webhook_received', ?)`,
-		userID, fmt.Sprintf("Ingested %.2f %s ($%.2f USD) from %s (TxID: %s)", payload.Amount, payload.Currency, baseAmount, payload.Merchant, payload.TransactionID),
+		userID, fmt.Sprintf("Ingested %.2f %s (₹%.2f INR) from %s (TxID: %s)", payload.Amount, payload.Currency, baseAmount, payload.Merchant, payload.TransactionID),
 	)
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -162,11 +161,11 @@ func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 		"message":          "Bank transaction ingested into ledger",
 		"transactionId":    payload.TransactionID,
 		"normalizedAmount": baseAmount,
+		"baseCurrency":     "INR",
 		"isAnomaly":        isAnomaly == 1,
 	})
 }
 
-// SMSIngestionAPI handles SMS transaction notifications forwarded from Google Pay / PhonePe / Paytm / Bank SMS.
 func (h *BankSyncHandler) SMSIngestionAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -197,7 +196,7 @@ func (h *BankSyncHandler) SMSIngestionAPI(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	baseAmount, rate, _ := h.CurrencyService.Convert(parsed.Amount, parsed.Currency, "USD")
+	baseAmount, rate, _ := h.CurrencyService.Convert(parsed.Amount, parsed.Currency, "INR")
 
 	var catID *int64
 	if parsed.SuggestedCategory != "" {
@@ -232,7 +231,7 @@ func (h *BankSyncHandler) SMSIngestionAPI(w http.ResponseWriter, r *http.Request
 	}
 
 	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'sms_payment_synced', ?)`,
-		userID, fmt.Sprintf("Parsed Payment SMS from %s: %.2f %s ($%.2f USD) at %s", method, parsed.Amount, parsed.Currency, baseAmount, parsed.Vendor),
+		userID, fmt.Sprintf("Parsed Payment SMS from %s: %.2f %s (₹%.2f INR) at %s", method, parsed.Amount, parsed.Currency, baseAmount, parsed.Vendor),
 	)
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -240,11 +239,11 @@ func (h *BankSyncHandler) SMSIngestionAPI(w http.ResponseWriter, r *http.Request
 		"message":          "Payment SMS parsed and added to ledger",
 		"extractedData":    parsed,
 		"normalizedAmount": baseAmount,
+		"baseCurrency":     "INR",
 		"paymentAppSender": method,
 	})
 }
 
-// PaymentAppWebhookAPI handles direct webhooks from Google Pay, PhonePe, Paytm, Stripe, Razorpay, PayPal.
 func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -271,7 +270,7 @@ func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Re
 	}
 
 	if payload.Currency == "" {
-		payload.Currency = "USD"
+		payload.Currency = "INR"
 	} else {
 		payload.Currency = strings.ToUpper(strings.TrimSpace(payload.Currency))
 	}
@@ -285,7 +284,7 @@ func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Re
 		payload.PaymentMethod = "UPI / Wallet"
 	}
 
-	baseAmount, rate, _ := h.CurrencyService.Convert(payload.Amount, payload.Currency, "USD")
+	baseAmount, rate, _ := h.CurrencyService.Convert(payload.Amount, payload.Currency, "INR")
 
 	var catID *int64
 	if payload.Category != "" {
@@ -311,7 +310,7 @@ func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Re
 	}
 
 	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'payment_webhook_received', ?)`,
-		userID, fmt.Sprintf("Ingested %.2f %s ($%.2f USD) from %s via %s (Txn: %s)", payload.Amount, payload.Currency, baseAmount, payload.Merchant, payload.AppName, payload.TxnID),
+		userID, fmt.Sprintf("Ingested %.2f %s (₹%.2f INR) from %s via %s (Txn: %s)", payload.Amount, payload.Currency, baseAmount, payload.Merchant, payload.AppName, payload.TxnID),
 	)
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -319,5 +318,6 @@ func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Re
 		"message":          fmt.Sprintf("Payment from %s successfully recorded into PulseMatrix Ledger", payload.AppName),
 		"txnId":            payload.TxnID,
 		"normalizedAmount": baseAmount,
+		"baseCurrency":     "INR",
 	})
 }

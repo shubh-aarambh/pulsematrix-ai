@@ -10,26 +10,27 @@ import (
 	"expense-matrix/db"
 	"expense-matrix/middleware"
 	"expense-matrix/models"
+	"expense-matrix/services"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AdminHandler struct {
-	DB        *db.DB
-	Templates *template.Template
+	DB              *db.DB
+	Templates       *template.Template
+	CurrencyService *services.CurrencyService
 }
 
-func NewAdminHandler(database *db.DB, tmpl *template.Template) *AdminHandler {
-	return &AdminHandler{DB: database, Templates: tmpl}
+func NewAdminHandler(database *db.DB, tmpl *template.Template, cs *services.CurrencyService) *AdminHandler {
+	return &AdminHandler{DB: database, Templates: tmpl, CurrencyService: cs}
 }
 
 func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 	adminID := r.Context().Value(middleware.UserIDKey).(int64)
 	adminName, _ := r.Context().Value(middleware.UsernameKey).(string)
 
-	viewCtx := GetBaseContext(h.DB, adminID, adminName)
+	viewCtx := GetBaseContext(h.DB, h.CurrencyService, adminID, adminName)
 
-	// Platform-wide KPIs
 	var stats models.PlatformStats
 	_ = h.DB.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&stats.TotalUsers)
 	_ = h.DB.QueryRow(`SELECT COUNT(*) FROM users WHERE status = 'active'`).Scan(&stats.ActiveUsers)
@@ -40,7 +41,6 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 	_ = h.DB.QueryRow(`SELECT COUNT(*) FROM subscriptions WHERE status = 'active'`).Scan(&stats.ActiveSubs)
 	_ = h.DB.QueryRow(`SELECT COUNT(*) FROM savings_goals`).Scan(&stats.TotalGoals)
 
-	// User search & filter
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	roleFilter := strings.TrimSpace(r.URL.Query().Get("role"))
 
@@ -79,7 +79,6 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Platform-wide anomaly monitor
 	type PlatformAnomaly struct {
 		ID       int64
 		Username string
@@ -105,7 +104,6 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Recent platform-wide audit logs
 	type AdminAuditLog struct {
 		ID        int64
 		Username  string
@@ -128,7 +126,7 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	viewCtx["Title"] = "Platform Admin Console - PulseMatrix AI"
+	viewCtx["Title"] = "Admin Control Plane"
 	viewCtx["ActivePage"] = "admin"
 	viewCtx["AdminID"] = adminID
 	viewCtx["Stats"] = stats
@@ -230,7 +228,7 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	settings := h.DB.GetSystemSettings()
 	res, err := h.DB.Exec(
-		`INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal) VALUES (?, ?, ?, ?, 'active', 'USD', ?)`,
+		`INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal) VALUES (?, ?, ?, ?, 'active', 'INR', ?)`,
 		username, email, string(hashed), role, settings.DefaultBudgetGoal,
 	)
 	if err != nil {

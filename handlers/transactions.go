@@ -27,7 +27,7 @@ func (h *TransactionHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int64)
 	username, _ := r.Context().Value(middleware.UsernameKey).(string)
 
-	viewCtx := GetBaseContext(h.DB, userID, username)
+	viewCtx := GetBaseContext(h.DB, h.CurrencyService, userID, username)
 
 	search := strings.TrimSpace(r.URL.Query().Get("q"))
 	catFilter := strings.TrimSpace(r.URL.Query().Get("category"))
@@ -123,16 +123,16 @@ func (h *TransactionHandler) Add(w http.ResponseWriter, r *http.Request) {
 		txDate = time.Now().Format("2006-01-02")
 	}
 	if currency == "" {
-		currency = "USD"
+		currency = "INR"
 	}
 	if method == "" {
-		method = "Credit Card"
+		method = "UPI"
 	}
 	if source == "" {
 		source = "manual"
 	}
 
-	baseAmount, rate, _ := h.CurrencyService.Convert(origAmount, currency, "USD")
+	baseAmount, rate, _ := h.CurrencyService.Convert(origAmount, currency, "INR")
 
 	var catID *int64
 	if catIDStr != "" {
@@ -155,7 +155,7 @@ func (h *TransactionHandler) Add(w http.ResponseWriter, r *http.Request) {
 	anomalyReason := ""
 	if baseAmount > sysSettings.AnomalyThreshold {
 		isAnomaly = 1
-		anomalyReason = fmt.Sprintf("High magnitude charge ($%.2f USD > $%.0f threshold)", baseAmount, sysSettings.AnomalyThreshold)
+		anomalyReason = fmt.Sprintf("High magnitude charge (₹%.2f > ₹%.0f threshold)", baseAmount, sysSettings.AnomalyThreshold)
 	}
 
 	_, err := h.DB.Exec(`
@@ -192,16 +192,16 @@ func (h *TransactionHandler) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if currency == "" {
-		currency = "USD"
+		currency = "INR"
 	}
 	if txDate == "" {
 		txDate = time.Now().Format("2006-01-02")
 	}
 	if method == "" {
-		method = "Credit Card"
+		method = "UPI"
 	}
 
-	baseAmount, rate, _ := h.CurrencyService.Convert(origAmount, currency, "USD")
+	baseAmount, rate, _ := h.CurrencyService.Convert(origAmount, currency, "INR")
 
 	var catID *int64
 	if catIDStr != "" {
@@ -302,7 +302,7 @@ func (h *TransactionHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		curr := "USD"
+		curr := "INR"
 		if len(rec) > 3 && strings.TrimSpace(rec[3]) != "" {
 			curr = strings.ToUpper(strings.TrimSpace(rec[3]))
 		}
@@ -325,12 +325,12 @@ func (h *TransactionHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 			catID = &cidCopy
 		}
 
-		baseAmt, rate, _ := h.CurrencyService.Convert(origAmt, curr, "USD")
+		baseAmt, rate, _ := h.CurrencyService.Convert(origAmt, curr, "INR")
 		isAnom := 0
 		anomReason := ""
 		if baseAmt > sysSettings.AnomalyThreshold {
 			isAnom = 1
-			anomReason = fmt.Sprintf("CSV Import High Charge ($%.2f USD)", baseAmt)
+			anomReason = fmt.Sprintf("CSV Import High Charge (₹%.2f)", baseAmt)
 		}
 
 		if _, err := h.DB.Exec(`
@@ -383,7 +383,7 @@ func (h *TransactionHandler) ExportCSV(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment;filename=pulsematrix_ledger_%s.csv", time.Now().Format("20060102")))
 
 	writer := csv.NewWriter(w)
-	_ = writer.Write([]string{"Date", "Vendor", "Amount (USD)", "Original Amount", "Currency", "Payment Method", "Category", "Source", "Description"})
+	_ = writer.Write([]string{"Date", "Vendor", "Amount (INR)", "Original Amount", "Currency", "Payment Method", "Category", "Source", "Description"})
 
 	for rows.Next() {
 		var date, vendor, curr, method, cat, source, desc string

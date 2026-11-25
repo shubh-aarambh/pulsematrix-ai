@@ -100,9 +100,20 @@ type FinancialHealth struct {
 	SavingsRate        float64  `json:"savingsRate"`        // percentage
 	SubscriptionWeight float64  `json:"subscriptionWeight"` // percentage of spend
 	BudgetUtilization  float64  `json:"budgetUtilization"`  // percentage of goal
+	DailyBurnRate      float64  `json:"dailyBurnRate"`      // average spend/day MTD
+	ProjectedSpend     float64  `json:"projectedSpend"`     // projected EOM spend
+	SafeDailyAllowance float64  `json:"safeDailyAllowance"` // remaining budget / days left
+	DaysRemaining      int      `json:"daysRemaining"`
 	TopCategory        string   `json:"topCategory"`
 	AnomalyCount       int      `json:"anomalyCount"`
 	Recommendations    []string `json:"recommendations"`
+}
+
+type DailyHeatmapCell struct {
+	Date   string  `json:"date"`
+	Label  string  `json:"label"`
+	Amount float64 `json:"amount"`
+	Level  int     `json:"level"` // 0..4
 }
 
 type AIParsedReceipt struct {
