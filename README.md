@@ -1,6 +1,11 @@
 # ⚡ PulseMatrix AI — Autonomous Financial Intelligence & Expense Engine
 
-> A production-grade, high-performance financial analytics and expense intelligence platform written in **Go 1.22**, featuring autonomous receipt/OCR parsing with **Google Gemini 1.5 AI**, statistical anomaly detection, multi-currency live exchange rates, automated recurring subscription tracking, and real-time payment app / bank webhook ingestion.
+[![Live Demo](https://img.shields.io/badge/Live%20App-pulsematrix--ai.onrender.com-6366f1?style=for-the-badge)](https://pulsematrix-ai.onrender.com)
+[![Deploy to Render](https://img.shields.io/badge/Deploy%20to-Render-46E3B7?style=for-the-badge)](https://render.com/deploy?repo=https://github.com/shubh-aarambh/pulsematrix-ai)
+
+> **Live Deployment:** https://pulsematrix-ai.onrender.com (Health Check: https://pulsematrix-ai.onrender.com/health)
+>
+> A production-grade, high-performance financial analytics and expense intelligence platform written in **Go**, featuring autonomous receipt/OCR parsing with **Google Gemini AI**, statistical anomaly detection, multi-currency live exchange rates, automated recurring subscription tracking, and real-time payment app / bank webhook ingestion.
 
 ---
 
