@@ -84,7 +84,6 @@ func (cs *CurrencyService) GetRates() map[string]float64 {
 	}
 	cs.mu.RUnlock()
 
-	// Attempt API refresh
 	rates, err := cs.fetchLiveRates()
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
@@ -104,12 +103,31 @@ func copyRatesMap(src map[string]float64) map[string]float64 {
 }
 
 func (cs *CurrencyService) fetchLiveRates() (map[string]float64, error) {
-	url := "https://open.er-api.com/v6/latest/USD"
+	urls := make([]string, 0, 3)
 	if cs.cfg.ExchangeRateAPIKey != "" {
-		url = fmt.Sprintf("https://v6.exchangerate-api.com/v6/%s/latest/USD", cs.cfg.ExchangeRateAPIKey)
+		urls = append(urls,
+			fmt.Sprintf("https://v6.exchangerate-api.com/v6/%s/latest/USD", cs.cfg.ExchangeRateAPIKey),
+			fmt.Sprintf("https://api.exchangerate.host/live?access_key=%s", cs.cfg.ExchangeRateAPIKey),
+		)
+	}
+	// Always fall back to the free open ExchangeRate-API endpoint
+	urls = append(urls, "https://open.er-api.com/v6/latest/USD")
+
+	client := &http.Client{Timeout: 4 * time.Second}
+	var lastErr error
+
+	for _, url := range urls {
+		rates, err := fetchRatesFromURL(client, url)
+		if err == nil && len(rates) > 0 {
+			return rates, nil
+		}
+		lastErr = err
 	}
 
-	client := &http.Client{Timeout: 3 * time.Second}
+	return nil, lastErr
+}
+
+func fetchRatesFromURL(client *http.Client, url string) (map[string]float64, error) {
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
@@ -123,6 +141,7 @@ func (cs *CurrencyService) fetchLiveRates() (map[string]float64, error) {
 	var data struct {
 		Rates           map[string]float64 `json:"rates"`
 		ConversionRates map[string]float64 `json:"conversion_rates"`
+		Quotes          map[string]float64 `json:"quotes"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
@@ -134,6 +153,18 @@ func (cs *CurrencyService) fetchLiveRates() (map[string]float64, error) {
 	}
 	if len(data.ConversionRates) > 0 {
 		return data.ConversionRates, nil
+	}
+	if len(data.Quotes) > 0 {
+		parsed := make(map[string]float64, len(data.Quotes)+1)
+		parsed["USD"] = 1.0
+		for pair, val := range data.Quotes {
+			if strings.HasPrefix(pair, "USD") && len(pair) == 6 {
+				parsed[pair[3:]] = val
+			}
+		}
+		if len(parsed) > 1 {
+			return parsed, nil
+		}
 	}
 
 	return nil, fmt.Errorf("no rates found in response")
