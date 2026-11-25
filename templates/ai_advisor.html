@@ -1,0 +1,40 @@
+{{define "content"}}
+<div class="ai-chat-layout card">
+    <div class="chat-header">
+        <div class="chat-title">
+            <span class="chat-icon">🤖</span>
+            <div>
+                <h3>PulseMatrix AI Financial Strategist</h3>
+                <span class="chat-subtitle">Context Aware • Connected to Live Ledger State & Gemini 1.5 LLM</span>
+            </div>
+        </div>
+        <div class="health-chip">
+            Health Score: <strong>{{.Health.Score}}/100</strong>
+        </div>
+    </div>
+
+    <div class="chat-body" id="chatMessages">
+        <div class="chat-bubble assistant">
+            <div class="avatar">🤖</div>
+            <div class="bubble-content">
+                Hello! I am your <strong>PulseMatrix AI Strategist</strong>. I have real-time visibility into your income, category spend breakdown, and active recurring subscriptions.<br><br>
+                How can I assist you today? You can try asking one of the suggested prompts below:
+            </div>
+        </div>
+    </div>
+
+    <!-- Suggested Prompts Row -->
+    <div class="suggested-prompts">
+        <button class="prompt-chip" onclick="sendQuickPrompt('How can I optimize my subscriptions to save money?')">💡 Optimize Subscriptions</button>
+        <button class="prompt-chip" onclick="sendQuickPrompt('Analyze my food & dining spend this month')">🍜 Audit Food & Dining</button>
+        <button class="prompt-chip" onclick="sendQuickPrompt('Summarize my top financial risks and health score')">📈 Financial Health Audit</button>
+        <button class="prompt-chip" onclick="sendQuickPrompt('What is my projected end of month spend velocity?')">📊 End of Month Forecast</button>
+    </div>
+
+    <!-- Chat Input Form -->
+    <div class="chat-input-area">
+        <input type="text" id="chatInput" class="form-control" placeholder="Ask AI Advisor anything about your portfolio or spend..." onkeypress="if(event.key === 'Enter') sendAIChatMessage()">
+        <button class="btn btn-primary" onclick="sendAIChatMessage()">Send Prompt &rarr;</button>
+    </div>
+</div>
+{{end}}

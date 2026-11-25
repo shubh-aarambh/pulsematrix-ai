@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: pulsematrix-ai
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: BASE_CURRENCY
+        value: "USD"
+      - key: DB_PATH
+        value: "/app/data/pulsematrix.db"
+      - key: ENABLE_AI_SERVICES
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true

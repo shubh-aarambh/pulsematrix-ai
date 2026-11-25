@@ -1,0 +1,52 @@
+{{define "content"}}
+<div class="analytics-grid">
+    <!-- Top Radar Overview Card -->
+    <div class="card bg-gradient-dark">
+        <div class="card-header-flex">
+            <div>
+                <h2>Intelligence Radar & Risk Metrics</h2>
+                <p class="subtitle">Automated statistical anomaly detection & portfolio pace score</p>
+            </div>
+            <div class="badge badge-primary">Pulse Matrix Engine v2.6</div>
+        </div>
+        <div class="radar-stats-grid">
+            <div class="radar-stat-box">
+                <span class="stat-title">Overall Score</span>
+                <span class="stat-number text-accent">{{.Health.Score}}/100</span>
+                <span class="stat-desc">Status: {{.Health.Rating}}</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Net Savings Rate</span>
+                <span class="stat-number text-success">{{.Health.SavingsRate}}%</span>
+                <span class="stat-desc">${{printf "%.2f" .Health.NetSavings}} Monthly Surplus</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">SaaS Subscription Burden</span>
+                <span class="stat-number text-warning">{{.Health.SubscriptionWeight}}%</span>
+                <span class="stat-desc">Of total monthly burn</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Flagged Anomalies</span>
+                <span class="stat-number text-danger">{{.Health.AnomalyCount}}</span>
+                <span class="stat-desc">Duplicate or price surge alerts</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <div class="card flex-1">
+            <h3>Monthly Expenditure Velocity</h3>
+            <div class="chart-wrapper">
+                <canvas id="analyticsVelocityChart"></canvas>
+            </div>
+        </div>
+        <div class="card flex-1">
+            <h3>Category Breakdown Heatmap</h3>
+            <div class="chart-wrapper">
+                <canvas id="analyticsCategoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  pulsematrix:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pulsematrix_app
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - pulsematrix_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  pulsematrix_data:

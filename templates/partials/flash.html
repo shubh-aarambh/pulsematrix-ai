@@ -1,0 +1,16 @@
+{{define "flash.html"}}
+{{if .FlashSuccess}}
+<div class="toast toast-success" id="flash-alert">
+    <div class="toast-icon">✨</div>
+    <div class="toast-content">{{.FlashSuccess}}</div>
+    <button class="toast-close" onclick="document.getElementById('flash-alert').remove()">&times;</button>
+</div>
+{{end}}
+{{if .Error}}
+<div class="toast toast-danger" id="flash-alert">
+    <div class="toast-icon">⚠️</div>
+    <div class="toast-content">{{.Error}}</div>
+    <button class="toast-close" onclick="document.getElementById('flash-alert').remove()">&times;</button>
+</div>
+{{end}}
+{{end}}

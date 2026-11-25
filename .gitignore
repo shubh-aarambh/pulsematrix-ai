@@ -1,0 +1,23 @@
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+pulsematrix
+expense-matrix
+
+# Local environment secrets
+.env
+.env.local
+
+# SQLite database files
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

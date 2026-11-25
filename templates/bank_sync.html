@@ -1,0 +1,200 @@
+{{define "content"}}
+<div class="bank-sync-container">
+    <!-- Webhook Integration Card -->
+    <div class="card bg-gradient-dark">
+        <div class="card-header-flex">
+            <div>
+                <h2>Payment Apps & Banking Integration Hub</h2>
+                <p class="subtitle">Direct integration support for Google Pay, PhonePe, Paytm, Apple Pay, PayPal, Stripe, and Automated SMS Listeners</p>
+            </div>
+            <span class="badge badge-success">Ingestion Engine Ready</span>
+        </div>
+
+        <div class="form-grid mt-3">
+            <div class="webhook-endpoint-box">
+                <label>1. Payment App API Webhook Endpoint:</label>
+                <div class="code-copy-row">
+                    <code id="paymentWebhookCode">POST /api/webhooks/payment</code>
+                    <button class="btn btn-sm btn-secondary" onclick="copyEndpointUrl('/api/webhooks/payment', this)">Copy URL</button>
+                </div>
+            </div>
+            <div class="webhook-endpoint-box">
+                <label>2. Automated SMS / Notification Auto-Forwarder Endpoint:</label>
+                <div class="code-copy-row">
+                    <code id="smsIngestCode">POST /api/v1/ingest/sms</code>
+                    <button class="btn btn-sm btn-secondary" onclick="copyEndpointUrl('/api/v1/ingest/sms', this)">Copy URL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment App Live Simulator Grid -->
+    <div class="charts-row mt-4">
+        <!-- Simulator 1: Direct Payment App API (Google Pay, PhonePe, Apple Pay) -->
+        <div class="card flex-1">
+            <h3>📱 Simulate Payment App Transaction (Google Pay / PhonePe / Apple Pay)</h3>
+            <p class="text-muted text-sm">Sends structured transaction payload as fired by mobile payment gateways.</p>
+
+            <div class="form-group mt-3">
+                <label>Payment App Source</label>
+                <select id="payAppSource" class="form-control">
+                    <option value="Google Pay">Google Pay</option>
+                    <option value="PhonePe">PhonePe</option>
+                    <option value="Paytm">Paytm</option>
+                    <option value="Apple Pay">Apple Pay</option>
+                    <option value="PayPal">PayPal</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Merchant / Receiver</label>
+                <input type="text" id="payAppMerchant" class="form-control" value="Swiggy Food Delivery">
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" step="0.01" id="payAppAmount" class="form-control" value="380.00">
+                </div>
+                <div class="form-group">
+                    <label>Currency</label>
+                    <select id="payAppCurrency" class="form-control">
+                        <option value="INR">INR (₹)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-block mt-3" onclick="triggerPaymentAppSimulator()">🚀 Ingest Payment App Transaction</button>
+            <div id="payAppResultBox" class="ai-preview-box mt-3 hidden"></div>
+        </div>
+
+        <!-- Simulator 2: SMS & Notification Auto-Parser -->
+        <div class="card flex-1">
+            <h3>💬 Simulate Incoming Bank / Payment App SMS Alert</h3>
+            <p class="text-muted text-sm">Feeds raw transaction SMS text into Gemini AI / Regex parser.</p>
+
+            <div class="form-group mt-3">
+                <label>Sample Payment Alert SMS Text</label>
+                <textarea id="smsText" class="form-control" rows="4">Paid Rs 450.00 to Starbucks Coffee via Google Pay UPI on 25-Sep-2026 ref 9981273</textarea>
+            </div>
+            <div class="form-group">
+                <label>Sender App / Bank Code</label>
+                <input type="text" id="smsSender" class="form-control" value="Google Pay / HDFC Bank">
+            </div>
+
+            <button class="btn btn-primary btn-block mt-3" onclick="triggerSMSSimulator()">⚡ Process SMS via AI Parser</button>
+            <div id="smsResultBox" class="ai-preview-box mt-3 hidden"></div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Logs -->
+    <div class="card mt-4">
+        <div class="card-header-flex">
+            <h3>Audit Logs & Ingestion History</h3>
+            <button class="btn btn-sm btn-secondary" onclick="window.location.reload()">Refresh Logs</button>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Payload Details</th>
+                    </tr>
+                </thead>
+                <tbody id="auditLogsBody">
+                    {{range .Logs}}
+                    <tr>
+                        <td><span class="font-mono text-muted">{{.CreatedAt}}</span></td>
+                        <td><span class="badge badge-primary">{{.Action}}</span></td>
+                        <td><span class="font-mono text-sm">{{.Details}}</span></td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="3" class="text-center py-4 text-muted">No webhook activity logged yet. Fire a test payload above!</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const origin = window.location.origin;
+    const payEl = document.getElementById('paymentWebhookCode');
+    const smsEl = document.getElementById('smsIngestCode');
+    if (payEl) payEl.textContent = 'POST ' + origin + '/api/webhooks/payment';
+    if (smsEl) smsEl.textContent = 'POST ' + origin + '/api/v1/ingest/sms';
+});
+
+function copyEndpointUrl(path, btn) {
+    const fullUrl = window.location.origin + path;
+    navigator.clipboard.writeText(fullUrl).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1800);
+    });
+}
+
+function escapeResultHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function triggerPaymentAppSimulator() {
+    const appName = document.getElementById('payAppSource').value;
+    const merchant = document.getElementById('payAppMerchant').value;
+    const amount = parseFloat(document.getElementById('payAppAmount').value);
+    const currency = document.getElementById('payAppCurrency').value;
+
+    const payload = {
+        appName: appName,
+        txnId: "TXN_" + appName.replace(/\s+/g, '').toUpperCase() + "_" + Math.floor(Math.random()*1000000),
+        merchant: merchant,
+        amount: amount,
+        currency: currency,
+        category: "Food & Dining",
+        paymentMethod: appName + " / UPI",
+        date: new Date().toISOString().split('T')[0]
+    };
+
+    const resBox = document.getElementById('payAppResultBox');
+    resBox.classList.remove('hidden');
+    resBox.textContent = 'Ingesting payment app webhook...';
+
+    try {
+        const res = await fetch('/api/webhooks/payment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        resBox.innerHTML = `<strong>Response (${res.status}):</strong><br><pre class="font-mono text-sm">${escapeResultHtml(JSON.stringify(data, null, 2))}</pre>`;
+    } catch(err) {
+        resBox.innerHTML = `<span class="text-danger">Error: ${escapeResultHtml(err.message)}</span>`;
+    }
+}
+
+async function triggerSMSSimulator() {
+    const sms = document.getElementById('smsText').value;
+    const sender = document.getElementById('smsSender').value;
+
+    const resBox = document.getElementById('smsResultBox');
+    resBox.classList.remove('hidden');
+    resBox.textContent = 'Processing SMS notification with AI parser...';
+
+    try {
+        const res = await fetch('/api/v1/ingest/sms', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ sms: sms, sender: sender })
+        });
+        const data = await res.json();
+        resBox.innerHTML = `<strong>Response (${res.status}):</strong><br><pre class="font-mono text-sm">${escapeResultHtml(JSON.stringify(data, null, 2))}</pre>`;
+    } catch(err) {
+        resBox.innerHTML = `<span class="text-danger">Error: ${escapeResultHtml(err.message)}</span>`;
+    }
+}
+</script>
+{{end}}

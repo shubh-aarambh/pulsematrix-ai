@@ -1,0 +1,203 @@
+{{define "content"}}
+<div class="dashboard-grid">
+    <!-- Top Metric Cards Row -->
+    <div class="metrics-row">
+        <!-- Health Score Card -->
+        <div class="card metric-card health-card">
+            <div class="card-header-flex">
+                <span class="card-label">Financial Health Rating</span>
+                <span class="badge badge-{{if eq .Health.Rating "Optimal"}}success{{else if eq .Health.Rating "Healthy"}}primary{{else}}warning{{end}}">{{.Health.Rating}}</span>
+            </div>
+            <div class="health-display">
+                <div class="health-score-ring">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle" stroke-dasharray="{{.Health.Score}}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.35" class="percentage">{{.Health.Score}}</text>
+                    </svg>
+                </div>
+                <div class="health-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Savings Velocity</span>
+                        <span class="meta-value {{if ge .Health.SavingsRate 0.0}}text-success{{else}}text-danger{{end}}">{{if ge .Health.SavingsRate 0.0}}+{{end}}{{.Health.SavingsRate}}%</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">SaaS Weight</span>
+                        <span class="meta-value">{{.Health.SubscriptionWeight}}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Spend vs Interactive Budget Goal Slider Card -->
+        <div class="card metric-card">
+            <div class="card-header-flex">
+                <span class="card-label">Monthly Expenditure</span>
+                <span class="badge badge-ghost">USD</span>
+            </div>
+            <div class="metric-value">${{printf "%.2f" .Health.MonthlySpend}}</div>
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="dashboardProgressBar" {{safeWidthStyle .Health.BudgetUtilization}}></div>
+                </div>
+                <div class="progress-labels">
+                    <span>Target: $<span id="lblBudgetGoal">{{printf "%.0f" .User.MonthlyBudgetGoal}}</span></span>
+                    <span id="lblBudgetUtil">{{.Health.BudgetUtilization}}% Used</span>
+                </div>
+            </div>
+            <!-- Live Budget Slider -->
+            <form action="/settings/update" method="POST" class="range-slider-container">
+                <div class="range-slider-label">
+                    <span>Adjust Monthly Target</span>
+                    <span class="range-slider-value" id="valSliderDisplay">${{printf "%.0f" .User.MonthlyBudgetGoal}}</span>
+                </div>
+                <div class="slider-action-row">
+                    <input type="range" name="monthlyBudgetGoal" id="dashBudgetSlider" min="1000" max="15000" step="250" value="{{.User.MonthlyBudgetGoal}}" oninput="updateLiveBudgetSlider(this.value, {{.Health.MonthlySpend}})">
+                    <button type="submit" id="btnSaveBudgetGoal" class="btn btn-sm btn-secondary hidden">Save</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Monthly Income Card -->
+        <div class="card metric-card">
+            <div class="card-header-flex">
+                <span class="card-label">Net Monthly Income</span>
+                <span class="badge badge-success">+Inflow</span>
+            </div>
+            <div class="metric-value text-success">${{printf "%.2f" .Health.MonthlyIncome}}</div>
+            <div class="meta-item">
+                <span class="meta-label">Net Surplus Capital</span>
+                <span class="meta-value {{if ge .Health.NetSavings 0.0}}text-success{{else}}text-danger{{end}}">{{formatMoney .Health.NetSavings}}</span>
+            </div>
+        </div>
+
+        <!-- Active Subscriptions Radar -->
+        <div class="card metric-card">
+            <div class="card-header-flex">
+                <span class="card-label">SaaS Subscription Run Rate</span>
+                <span class="badge badge-ghost">Recurring</span>
+            </div>
+            <div class="metric-value">${{printf "%.2f" .ActiveSubTotal}}<span class="unit">/mo</span></div>
+            <div class="progress-labels">
+                <span>{{.ActiveSubCount}} Active Subscriptions</span>
+                <a href="/subscriptions" class="link-accent">Radar &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <!-- 6 Month Income vs Expense Chart -->
+        <div class="card chart-card flex-2">
+            <div class="card-header-flex">
+                <div>
+                    <h3>Income vs Expense Trajectory</h3>
+                    <p class="subtitle">6-Month historical spend velocity</p>
+                </div>
+                <div class="badge badge-primary">Live Sync</div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Breakdown Chart -->
+        <div class="card chart-card flex-1">
+            <div class="card-header-flex">
+                <div>
+                    <h3>Category Allocation</h3>
+                    <p class="subtitle">Expense share distribution</p>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="categoryDoughnutChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Recent Ledger & AI Insights -->
+    <div class="bottom-row">
+        <!-- Recent Ledger Activity -->
+        <div class="card flex-2">
+            <div class="card-header-flex">
+                <h3>Recent Ledger Activity</h3>
+                <a href="/transactions" class="btn btn-secondary-sm">View All Ledger</a>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Merchant</th>
+                            <th>Date</th>
+                            <th>Source</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .RecentTxs}}
+                        <tr class="{{if .IsAnomaly}}table-row-warning{{end}}">
+                            <td>
+                                <span class="cat-pill" {{safeBorderStyle .CategoryColor}}>
+                                    {{.CategoryIcon}} {{.Category}}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="vendor-cell">
+                                    <span class="text-bold">{{.Vendor}}</span>
+                                    {{if .IsAnomaly}}
+                                    <span class="badge badge-warning" title="{{.Reason}}">⚠️ Anomaly</span>
+                                    {{end}}
+                                </div>
+                            </td>
+                            <td><span class="text-muted font-mono">{{.Date}}</span></td>
+                            <td>
+                                <span class="source-badge">{{.Source}}</span>
+                            </td>
+                            <td class="text-bold font-mono">${{printf "%.2f" .Amount}}</td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No recent transactions recorded.</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AI Advisor Recommendations Card -->
+        <div class="card flex-1 ai-card">
+            <div class="card-header-flex">
+                <h3>🤖 AI Financial Portfolio Audit</h3>
+            </div>
+            <div class="ai-recommendations-list">
+                {{range .Health.Recommendations}}
+                <div class="ai-recommendation-item">
+                    <div>💡</div>
+                    <div>{{.}}</div>
+                </div>
+                {{end}}
+            </div>
+            <div class="ai-card-footer">
+                <a href="/ai-advisor" class="btn btn-primary btn-block">Open AI Chat &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateLiveBudgetSlider(val, monthlySpend) {
+    const goal = parseFloat(val) || 4500;
+    document.getElementById('lblBudgetGoal').innerText = parseInt(goal, 10).toLocaleString();
+    document.getElementById('valSliderDisplay').innerText = '$' + parseInt(goal, 10).toLocaleString();
+
+    const util = ((monthlySpend / goal) * 100).toFixed(1);
+    document.getElementById('lblBudgetUtil').innerText = util + '% Used';
+    document.getElementById('dashboardProgressBar').style.width = Math.min(parseFloat(util), 100) + '%';
+
+    const saveBtn = document.getElementById('btnSaveBudgetGoal');
+    if (saveBtn) saveBtn.classList.remove('hidden');
+}
+</script>
+{{end}}

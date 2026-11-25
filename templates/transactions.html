@@ -1,0 +1,91 @@
+{{define "content"}}
+<div class="page-container">
+    <!-- Action Bar -->
+    <div class="action-bar card">
+        <form action="/transactions" method="GET" class="filter-form">
+            <div class="search-input-group">
+                <span class="search-icon">🔍</span>
+                <input type="text" name="q" class="form-control" placeholder="Search merchant, description..." value="{{.Search}}">
+            </div>
+            <select name="category" class="form-control" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                {{range .Categories}}
+                <option value="{{.Name}}" {{if eq $.CatFilter .Name}}selected{{end}}>{{.Icon}} {{.Name}}</option>
+                {{end}}
+            </select>
+            <button type="submit" class="btn btn-secondary">Filter</button>
+            {{if or .Search .CatFilter}}
+            <a href="/transactions" class="btn btn-ghost">Reset</a>
+            {{end}}
+        </form>
+
+        <div class="action-buttons">
+            <a href="/transactions/export/csv" class="btn btn-outline">📥 Export CSV</a>
+            <button class="btn btn-primary" onclick="openAddTxModal()">+ Add Entry</button>
+        </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <div class="card p-0">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Merchant / Vendor</th>
+                        <th>Category</th>
+                        <th>Payment Method</th>
+                        <th>Ingestion Source</th>
+                        <th>Original Currency</th>
+                        <th>Normalized Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Transactions}}
+                    <tr class="{{if .IsAnomaly}}table-row-warning{{end}}">
+                        <td><span class="font-mono text-muted">{{.Date}}</span></td>
+                        <td>
+                            <div class="vendor-cell">
+                                <span class="text-bold">{{.Vendor}}</span>
+                                {{if .Description}}
+                                <span class="text-muted text-sm">{{.Description}}</span>
+                                {{end}}
+                                {{if .IsAnomaly}}
+                                <span class="badge badge-warning" title="{{.AnomalyReason}}">⚠️ {{.AnomalyReason}}</span>
+                                {{end}}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="cat-pill" {{safeBorderStyle .CategoryColor}}>
+                                {{.CategoryIcon}} {{.CategoryName}}
+                            </span>
+                        </td>
+                        <td><span class="badge badge-ghost">{{.PaymentMethod}}</span></td>
+                        <td>
+                            <span class="source-badge source-{{.Source}}">{{.Source}}</span>
+                        </td>
+                        <td>
+                            <span class="font-mono">{{printf "%.2f" .OriginalAmount}} {{.OriginalCurrency}}</span>
+                        </td>
+                        <td>
+                            <span class="text-bold font-mono text-lg">${{printf "%.2f" .Amount}}</span>
+                        </td>
+                        <td>
+                            <form action="/transactions/delete" method="POST" style="display:inline;" onsubmit="return confirm('Delete transaction from ledger?');">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <button type="submit" class="btn-icon-danger" title="Delete">&times;</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">No transactions matching filter criteria.</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}
