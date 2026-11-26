@@ -109,6 +109,30 @@ CREATE TABLE IF NOT EXISTS savings_goals (
     created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS split_expenses (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    person_name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount      REAL NOT NULL,
+    currency    TEXT NOT NULL DEFAULT 'INR',
+    direction   TEXT NOT NULL CHECK(direction IN ('owed_to_me','i_owe')),
+    status      TEXT NOT NULL DEFAULT 'pending',
+    due_date    DATE NOT NULL,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS net_worth_items (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    category   TEXT NOT NULL DEFAULT 'Bank',
+    kind       TEXT NOT NULL CHECK(kind IN ('asset','liability')),
+    value      REAL NOT NULL DEFAULT 0,
+    icon       TEXT NOT NULL DEFAULT '🏦',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS system_settings (
     key        TEXT PRIMARY KEY,
     value      TEXT NOT NULL,
@@ -123,11 +147,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    key        TEXT PRIMARY KEY,
+    response   TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_cat       ON transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_vendor    ON transactions(user_id, vendor);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user     ON subscriptions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_goals_user             ON savings_goals(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_splits_user            ON split_expenses(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_networth_user          ON net_worth_items(user_id, kind);
 `
 	if _, err := db.Exec(schema); err != nil {
 		return err
@@ -137,7 +169,6 @@ CREATE INDEX IF NOT EXISTS idx_goals_user             ON savings_goals(user_id, 
 	_ = db.ensureColumn("users", "status", "TEXT NOT NULL DEFAULT 'active'")
 	_ = db.ensureColumn("users", "last_login_at", "TEXT DEFAULT ''")
 
-	// Seed default INR-native platform settings
 	defaults := map[string]string{
 		"allow_registration":  "true",
 		"announcement_banner": "",
@@ -173,24 +204,24 @@ func (db *DB) ensureColumn(table, column, colDef string) error {
 	return err
 }
 
-// EnsureAdminAccount strictly guarantees ONLY the single configured owner administrator exists.
-func (db *DB) EnsureAdminAccount(username, email, password string) error {
+// EnsureOwnerAccount guarantees the single Owner Admin account exists and matches configured credentials.
+func (db *DB) EnsureOwnerAccount(username, email, password string) error {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
-	// Ensure no non-owner account holds admin privileges
-	_, _ = db.Exec(`UPDATE users SET role = 'user' WHERE role = 'admin' AND username != ? AND email != ?`, username, email)
-
 	var existingID int64
-	err = db.QueryRow(`SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1`, username, email).Scan(&existingID)
+	err = db.QueryRow(`SELECT id FROM users WHERE lower(email) = lower(?) OR lower(username) = lower(?) LIMIT 1`, email, username).Scan(&existingID)
 	if err == nil && existingID > 0 {
-		_, err = db.Exec(`UPDATE users SET username = ?, email = ?, password = ?, role = 'admin', status = 'active' WHERE id = ?`,
-			username, email, string(hashed), existingID,
-		)
-		return err
+		_, _ = db.Exec(`UPDATE users SET username = ?, email = ?, password = ?, role = 'admin', status = 'active' WHERE id = ?`, username, email, string(hashed), existingID)
+		// Demote any non-owner admin accounts so ONLY the owner has admin privileges
+		_, _ = db.Exec(`UPDATE users SET role = 'user' WHERE id != ? AND role = 'admin'`, existingID)
+		return nil
 	}
+
+	// Demote any legacy admin accounts first
+	_, _ = db.Exec(`UPDATE users SET role = 'user' WHERE role = 'admin'`)
 
 	res, err := db.Exec(`
 		INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal)
@@ -202,12 +233,11 @@ func (db *DB) EnsureAdminAccount(username, email, password string) error {
 	}
 	if adminID, err := res.LastInsertId(); err == nil && adminID > 0 {
 		_ = db.SeedDefaults(adminID)
-		_, _ = db.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'system_bootstrap', 'Exclusive owner administrator account initialized')`, adminID)
+		_, _ = db.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'owner_bootstrap', 'Owner administrator initialized')`, adminID)
 	}
 	return nil
 }
 
-// GetSystemSettings retrieves global platform settings configured by admins.
 func (db *DB) GetSystemSettings() models.SystemSettings {
 	s := models.SystemSettings{
 		AllowRegistration:  true,
@@ -251,7 +281,7 @@ func (db *DB) SetSystemSetting(key, value string) error {
 	return err
 }
 
-// SeedDefaults creates INR-native default categories, realistic transactions, subscriptions, and savings goals.
+// SeedDefaults creates INR-native default categories, transactions, subscriptions, goals, splits, and net worth items.
 func (db *DB) SeedDefaults(userID int64) error {
 	categories := []struct {
 		name, icon, color, typ string
@@ -278,12 +308,10 @@ func (db *DB) SeedDefaults(userID int64) error {
 		}
 	}
 
-	var count int
-	err := db.QueryRow(`SELECT COUNT(*) FROM transactions WHERE user_id = ?`, userID).Scan(&count)
-	if err == nil && count == 0 {
-		today := time.Now()
+	today := time.Now()
 
-		// All normalized amounts stored in base INR (₹)
+	var count int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM transactions WHERE user_id = ?`, userID).Scan(&count); err == nil && count == 0 {
 		samples := []struct {
 			catName string
 			vendor  string
@@ -306,7 +334,7 @@ func (db *DB) SeedDefaults(userID int64) error {
 			{"Subscriptions & SaaS", "Netflix Ultra HD 4K", 649.00, "Monthly Streaming Plan", "bank_sync", "UPI AutoPay", 8, true, false, ""},
 			{"Subscriptions & SaaS", "GitHub Copilot Pro", 1650.00, "AI Coding Assistant Subscription", "bank_sync", "Credit Card", 10, true, false, ""},
 			{"Subscriptions & SaaS", "Spotify Family Duo", 179.00, "Music Streaming Plan", "bank_sync", "UPI AutoPay", 12, true, false, ""},
-			{"Travel & Transport", "Uber Premier Airport", 1240.00, "Kempegowda Airport Express Cab", "payment_app_api", "Google Pay / UPI", 7, false, false, ""},
+			{"Travel & Transport", "Uber Premier Airport", 1240.00, "Airport Express Cab", "payment_app_api", "Google Pay / UPI", 7, false, false, ""},
 			{"Travel & Transport", "Uber Premier Airport", 1240.00, "Duplicate Billing Detected within 4 mins", "bank_sync", "Google Pay / UPI", 7, false, true, "Potential Duplicate Billing Detected"},
 			{"Shopping & Retail", "Apple India Store", 14900.00, "AirPods Pro 2 & MagSafe Charger", "ai_ocr", "Credit Card", 14, false, false, ""},
 			{"Investments & SIP", "Zerodha Coin Nifty 50", 25000.00, "Automated Monthly Index Fund SIP", "bank_sync", "UPI AutoPay", 16, true, false, ""},
@@ -357,7 +385,6 @@ func (db *DB) SeedDefaults(userID int64) error {
 
 	var goalCount int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM savings_goals WHERE user_id = ?`, userID).Scan(&goalCount); err == nil && goalCount == 0 {
-		today := time.Now()
 		goals := []struct {
 			name, icon, cat string
 			target, current float64
@@ -373,6 +400,49 @@ func (db *DB) SeedDefaults(userID int64) error {
 				INSERT INTO savings_goals (user_id, name, icon, target_amount, current_amount, target_date, category, status)
 				VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
 				userID, g.name, g.icon, g.target, g.current, tDate, g.cat,
+			)
+		}
+	}
+
+	var splitCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM split_expenses WHERE user_id = ?`, userID).Scan(&splitCount); err == nil && splitCount == 0 {
+		splits := []struct {
+			person, desc, dir string
+			amt               float64
+			daysAhead         int
+		}{
+			{"Aarav Mehta", "Goa Weekend Villa Share", "owed_to_me", 8500.0, 5},
+			{"Priya Sharma", "Team Dinner Split at Taj", "owed_to_me", 2950.0, 3},
+			{"Rohan Verma", "Flat Fiber & Electricity Split", "i_owe", 1850.0, 4},
+		}
+		for _, sp := range splits {
+			due := today.AddDate(0, 0, sp.daysAhead).Format("2006-01-02")
+			_, _ = db.Exec(`
+				INSERT INTO split_expenses (user_id, person_name, description, amount, currency, direction, status, due_date)
+				VALUES (?, ?, ?, ?, 'INR', ?, 'pending', ?)`,
+				userID, sp.person, sp.desc, sp.amt, sp.dir, due,
+			)
+		}
+	}
+
+	var nwCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM net_worth_items WHERE user_id = ?`, userID).Scan(&nwCount); err == nil && nwCount == 0 {
+		items := []struct {
+			name, cat, kind, icon string
+			val                   float64
+		}{
+			{"HDFC Salary & Savings Account", "Bank Cash", "asset", "🏦", 420000.0},
+			{"Zerodha Nifty 50 & Equity SIP", "Mutual Funds & Stocks", "asset", "📈", 865000.0},
+			{"Sovereign Gold Bonds", "Gold", "asset", "🪙", 185000.0},
+			{"Emergency Liquid FD", "Fixed Deposit", "asset", "🛡️", 300000.0},
+			{"HDFC Infinia Credit Card Due", "Credit Card", "liability", "💳", 28500.0},
+			{"Two-Wheeler / Vehicle EMI", "Loan", "liability", "🏍️", 85000.0},
+		}
+		for _, it := range items {
+			_, _ = db.Exec(`
+				INSERT INTO net_worth_items (user_id, name, category, kind, value, icon)
+				VALUES (?, ?, ?, ?, ?, ?)`,
+				userID, it.name, it.cat, it.kind, it.val, it.icon,
 			)
 		}
 	}

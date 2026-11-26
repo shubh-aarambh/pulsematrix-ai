@@ -18,16 +18,21 @@ type Config struct {
 	AdminUsername      string
 	AdminEmail         string
 	AdminPassword      string
-	AdminLoginPath     string
 	AdminAccessKey     string
+	AdminPortalPath    string
+	WebhookSecret      string
 }
 
 func Load() *Config {
 	loadDotEnv(".env")
 
-	loginPath := strings.TrimSpace(getEnv("ADMIN_LOGIN_PATH", "/owner-portal"))
-	if !strings.HasPrefix(loginPath, "/") {
-		loginPath = "/" + loginPath
+	portalPath := strings.TrimSpace(getEnv("ADMIN_PORTAL_PATH", "/owner-gate"))
+	if !strings.HasPrefix(portalPath, "/") {
+		portalPath = "/" + portalPath
+	}
+	portalPath = strings.TrimRight(portalPath, "/")
+	if portalPath == "" {
+		portalPath = "/owner-gate"
 	}
 
 	return &Config{
@@ -39,11 +44,12 @@ func Load() *Config {
 		ExchangeRateAPIKey: getEnv("EXCHANGERATE_API_KEY", ""),
 		BaseCurrency:       getEnv("BASE_CURRENCY", "INR"),
 		EnableAIServices:   getEnv("ENABLE_AI_SERVICES", "true") == "true",
-		AdminUsername:      getEnv("ADMIN_USERNAME", "owner"),
-		AdminEmail:         getEnv("ADMIN_EMAIL", "owner@localhost"),
-		AdminPassword:      getEnv("ADMIN_PASSWORD", "ChangeMe@2026"),
-		AdminLoginPath:     loginPath,
-		AdminAccessKey:     getEnv("ADMIN_ACCESS_KEY", "change-me-passkey"),
+		AdminUsername:      getEnv("ADMIN_USERNAME", "shubh_owner"),
+		AdminEmail:         getEnv("ADMIN_EMAIL", "shubhshukla1006@gmail.com"),
+		AdminPassword:      getEnv("ADMIN_PASSWORD", "Owner@Pulse2026!"),
+		AdminAccessKey:     getEnv("ADMIN_ACCESS_KEY", "PM-OWNER-2026"),
+		AdminPortalPath:    portalPath,
+		WebhookSecret:      getEnv("WEBHOOK_SECRET", ""),
 	}
 }
 

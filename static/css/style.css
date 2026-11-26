@@ -1360,3 +1360,66 @@ select.form-control option { background: #0d1319; color: #f1f5f9; }
     .heatmap-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
     .page-title { font-size: 1.25rem; }
 }
+
+
+/* Net Worth Cards & Printable Financial Statement */
+.nw-item-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.nw-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.statement-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+}
+
+@media print {
+    .sidebar,
+    .topbar,
+    .global-announcement,
+    .no-print,
+    .toast {
+        display: none !important;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        color: #0f172a !important;
+    }
+
+    .data-table th,
+    .data-table td {
+        color: #0f172a !important;
+        border-color: #cbd5e1 !important;
+    }
+}

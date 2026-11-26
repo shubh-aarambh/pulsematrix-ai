@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
     <title>{{.Title}}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,6 +11,7 @@
 </head>
 <body class="auth-body admin-auth-body">
     <div class="auth-split">
+        <!-- Private Owner Security Terminal Panel -->
         <section class="auth-showcase admin-showcase">
             <div class="showcase-top">
                 <div class="brand-logo">
@@ -20,52 +20,53 @@
                     </div>
                     <span class="brand-text">Pulse<span class="admin-accent">Owner</span></span>
                 </div>
-                <span class="badge badge-warning">PRIVATE • OWNER ONLY</span>
+                <span class="badge badge-warning">PRIVATE GATEWAY</span>
             </div>
 
             <div class="showcase-hero">
-                <h1>Private Owner Control Plane.</h1>
-                <p>Unlisted, passkey-protected console exclusively for the platform owner. Invisible to regular users — manages user accounts, global announcements, risk thresholds, and platform audit logs.</p>
+                <h1>Owner-Only Control Plane &amp; Backend Telemetry.</h1>
+                <p>Stealth administrative gateway restricted exclusively to the platform owner. Protected by 3-factor verification: owner identity, bcrypt password, and constant-time Master Access Key.</p>
             </div>
 
             <div class="showcase-features">
                 <div class="showcase-feat">
-                    <span class="feat-icon">🔑</span>
+                    <span class="feat-icon">📡</span>
                     <div>
-                        <strong>3-Factor Owner Gate</strong>
-                        <span>Unlisted endpoint + Owner credentials + Constant-time Access Passkey</span>
+                        <strong>Live Runtime &amp; Prometheus Telemetry</strong>
+                        <span>Inspect p95 latency, goroutines, heap MB, rate-limit drops &amp; worker runs</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
-                    <span class="feat-icon">👻</span>
+                    <span class="feat-icon">🔐</span>
                     <div>
-                        <strong>Stealth Zero-Disclosure</strong>
-                        <span>Zero links on user pages; non-admin probes to /admin return HTTP 404</span>
+                        <strong>Zero-Visibility Stealth RBAC</strong>
+                        <span>Standard users never see admin UI and receive 404 on admin routes</span>
                     </div>
                 </div>
             </div>
 
             <div class="showcase-footer">
-                <span>PulseMatrix Exclusive Owner Authentication</span>
+                <span>Constant-Time Access Key Check • Token-Bucket Protected</span>
             </div>
         </section>
 
+        <!-- 3-Factor Owner Auth Card -->
         <section class="auth-panel">
             <div class="auth-card admin-auth-card">
                 <div class="auth-brand">
-                    <div class="admin-shield-pill">🔐 EXCLUSIVE OWNER ACCESS</div>
-                    <h2>Owner Sign In</h2>
-                    <p class="auth-subtitle">Enter your owner credentials and private access passkey</p>
+                    <div class="admin-shield-pill">🔐 OWNER-ONLY ACCESS</div>
+                    <h2>Owner Authentication</h2>
+                    <p class="auth-subtitle">Enter owner credentials &amp; master access key</p>
                 </div>
 
                 {{if .Error}}
                 <div class="alert alert-danger">{{.Error}}</div>
                 {{end}}
 
-                <form action="{{.AdminLoginPath}}" method="POST" class="auth-form">
+                <form action="{{.PortalPath}}" method="POST" class="auth-form">
                     <div class="form-group">
                         <label>Owner Username or Email</label>
-                        <input type="text" name="username" class="form-control" placeholder="Owner username or email" required autofocus>
+                        <input type="text" name="username" class="form-control" placeholder="Owner identity" required autofocus>
                     </div>
 
                     <div class="form-group">
@@ -74,11 +75,11 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Owner Access Passkey</label>
-                        <input type="password" name="access_key" class="form-control font-mono" placeholder="Private Owner Passkey" required>
+                        <label>Master Access Key</label>
+                        <input type="password" name="access_key" class="form-control font-mono" placeholder="PM-OWNER-••••" required>
                     </div>
 
-                    <button type="submit" class="btn btn-admin btn-block btn-lg">Unlock Owner Console &rarr;</button>
+                    <button type="submit" class="btn btn-admin btn-block btn-lg">Unlock Owner Control Plane &rarr;</button>
                 </form>
             </div>
         </section>

@@ -1,26 +1,63 @@
 {{define "content"}}
 <div class="admin-console-container">
-    <!-- Admin Header Banner -->
+    <!-- Owner Header Banner -->
     <div class="card bg-gradient-admin">
         <div class="card-header-flex" style="margin-bottom:0.4rem;">
             <div>
-                <div class="admin-shield-pill">🛡️ PLATFORM ADMINISTRATOR CONTROL PLANE</div>
-                <h2 style="margin-top:0.5rem;">PulseMatrix Global Operations &amp; Governance</h2>
-                <p class="subtitle">Monitor platform telemetry, manage user RBAC roles, tune anomaly thresholds, and audit security logs.</p>
+                <div class="admin-shield-pill">🛡️ EXCLUSIVE OWNER CONTROL PLANE</div>
+                <h2 style="margin-top:0.45rem;">PulseMatrix Operations, Governance &amp; Runtime Telemetry</h2>
+                <p class="subtitle">Private owner-only view — completely invisible to standard users.</p>
             </div>
             <div class="action-buttons">
-                <a href="/" class="btn btn-secondary-sm">User Workspace</a>
+                <form action="/admin/worker/trigger" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-secondary-sm">⚡ Run Worker Sweep</button>
+                </form>
+                <a href="/admin/metrics" target="_blank" class="btn btn-secondary-sm">JSON Metrics</a>
+                <a href="/admin/metrics/prometheus" target="_blank" class="btn btn-secondary-sm">Prometheus</a>
                 <button class="btn btn-admin" onclick="openCreateUserModal()">+ Provision User</button>
             </div>
         </div>
     </div>
 
-    <!-- Platform KPIs -->
+    <!-- Live Go Backend Systems Telemetry Panel -->
+    <div class="card">
+        <div class="card-header-flex">
+            <div>
+                <h3>📡 Live Go Runtime &amp; Backend Systems Telemetry</h3>
+                <p class="subtitle">Real-time observability: token-bucket throttling, p95 HTTP latency, memory heap &amp; background worker pool</p>
+            </div>
+            <span class="badge badge-success">Uptime: {{.Telemetry.UptimeHuman}}</span>
+        </div>
+        <div class="radar-stats-grid">
+            <div class="radar-stat-box">
+                <span class="stat-title">HTTP Throughput</span>
+                <span class="stat-number text-accent">{{.Telemetry.TotalRequests}}</span>
+                <span class="stat-desc">5xx Errors: {{.Telemetry.ErrorRequests}} • 429 Throttled: {{.Telemetry.RateLimited}}</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Latency (Avg / p95)</span>
+                <span class="stat-number text-cyan">{{printf "%.1f" .Telemetry.P95LatencyMs}}ms</span>
+                <span class="stat-desc">Avg: {{printf "%.2f" .Telemetry.AvgLatencyMs}}ms (rolling window)</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Go Runtime Health</span>
+                <span class="stat-number text-success">{{printf "%.1f" .Telemetry.HeapAllocMB}} MB</span>
+                <span class="stat-desc">{{.Telemetry.Goroutines}} Goroutines • {{.Telemetry.NumGC}} GC Cycles</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Async Workers &amp; Hooks</span>
+                <span class="stat-number text-warning">{{.Telemetry.WorkerRuns}} Runs</span>
+                <span class="stat-desc">{{.Telemetry.WebhooksIngest}} Webhooks • {{.Telemetry.AnomaliesTagged}} Auto-Flagged</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Business KPIs -->
     <div class="metrics-row">
         <div class="card metric-card">
             <div class="card-header-flex">
                 <span class="card-label">Registered Accounts</span>
-                <span class="badge badge-primary">{{.Stats.AdminCount}} Admins</span>
+                <span class="badge badge-warning">1 Owner</span>
             </div>
             <div class="metric-value">{{.Stats.TotalUsers}}</div>
             <div class="progress-labels">
@@ -32,7 +69,7 @@
         <div class="card metric-card">
             <div class="card-header-flex">
                 <span class="card-label">Platform Ledger Volume</span>
-                <span class="badge badge-success">{{.CurrencyCode}} Live</span>
+                <span class="badge badge-success">{{.CurrencyCode}}</span>
             </div>
             <div class="metric-value">{{dispWhole .Stats.TotalVolumeUSD .DisplayRate .CurrencySymbol}}</div>
             <div class="progress-labels">
@@ -56,7 +93,7 @@
         <div class="card metric-card">
             <div class="card-header-flex">
                 <span class="card-label">Recurring Services</span>
-                <span class="badge badge-cyan">AutoPay Engine</span>
+                <span class="badge badge-cyan">SaaS Engine</span>
             </div>
             <div class="metric-value">{{.Stats.ActiveSubs}}</div>
             <div class="progress-labels">
@@ -66,21 +103,16 @@
         </div>
     </div>
 
-    <!-- User Directory & RBAC Table -->
+    <!-- User Directory -->
     <div class="card">
         <div class="card-header-flex">
             <div>
-                <h3>User Directory &amp; Role-Based Access Control</h3>
-                <p class="subtitle">Promote/demote administrators, suspend compromised accounts, or inspect user ledger footprint.</p>
+                <h3>User Directory &amp; Account Lifecycle</h3>
+                <p class="subtitle">Suspend compromised accounts, provision users, or inspect ledger volume (Owner-only admin lock enforced).</p>
             </div>
             <form action="/admin" method="GET" class="admin-filter-row">
                 <input type="text" name="q" class="form-control" placeholder="Search username or email..." value="{{.Search}}">
-                <select name="role" class="form-control" onchange="this.form.submit()">
-                    <option value="">All Roles</option>
-                    <option value="admin" {{if eq .RoleFilter "admin"}}selected{{end}}>Admins Only</option>
-                    <option value="user" {{if eq .RoleFilter "user"}}selected{{end}}>Standard Users</option>
-                </select>
-                <button type="submit" class="btn btn-secondary-sm">Filter</button>
+                <button type="submit" class="btn btn-secondary-sm">Search</button>
             </form>
         </div>
 
@@ -93,7 +125,7 @@
                         <th>Status</th>
                         <th>Ledger Activity ({{.CurrencyCode}})</th>
                         <th>Last Login</th>
-                        <th>Admin Actions</th>
+                        <th>Owner Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,16 +133,12 @@
                     <tr>
                         <td>
                             <div class="vendor-cell">
-                                <span class="text-bold">{{.Username}}{{if eq .ID $.AdminID}} <span class="badge badge-ghost">You</span>{{end}}</span>
+                                <span class="text-bold">{{.Username}}{{if eq .ID $.AdminID}} <span class="badge badge-warning">OWNER</span>{{end}}</span>
                                 <span class="text-muted text-sm">{{.Email}} • {{.PreferredCurrency}} • Joined {{.CreatedAt}}</span>
                             </div>
                         </td>
-                        <td>
-                            <span class="badge {{if eq .Role "admin"}}badge-warning{{else}}badge-primary{{end}}">{{upper .Role}}</span>
-                        </td>
-                        <td>
-                            <span class="badge {{if eq .Status "active"}}badge-success{{else}}badge-danger{{end}}">{{.Status}}</span>
-                        </td>
+                        <td><span class="badge {{if eq .Role "admin"}}badge-warning{{else}}badge-primary{{end}}">{{if eq .Role "admin"}}OWNER{{else}}USER{{end}}</span></td>
+                        <td><span class="badge {{if eq .Status "active"}}badge-success{{else}}badge-danger{{end}}">{{.Status}}</span></td>
                         <td>
                             <div class="vendor-cell">
                                 <span class="font-mono text-bold">{{dispWhole .TotalSpend $.DisplayRate $.CurrencySymbol}}</span>
@@ -123,9 +151,7 @@
                             <div class="inline-actions">
                                 <form action="/admin/users/toggle-status" method="POST" style="display:inline;">
                                     <input type="hidden" name="id" value="{{.ID}}">
-                                    <button type="submit" class="btn btn-sm {{if eq .Status "active"}}btn-outline-danger{{else}}btn-success{{end}}">
-                                        {{if eq .Status "active"}}Suspend{{else}}Activate{{end}}
-                                    </button>
+                                    <button type="submit" class="btn btn-sm {{if eq .Status "active"}}btn-outline-danger{{else}}btn-success{{end}}">{{if eq .Status "active"}}Suspend{{else}}Activate{{end}}</button>
                                 </form>
                                 <form action="/admin/users/delete" method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete user {{.Username}} and all their data?');">
                                     <input type="hidden" name="id" value="{{.ID}}">
@@ -133,7 +159,7 @@
                                 </form>
                             </div>
                             {{else}}
-                            <span class="badge badge-warning">Owner (Exclusive)</span>
+                            <span class="text-muted text-sm">Protected Owner</span>
                             {{end}}
                         </td>
                     </tr>
@@ -159,7 +185,7 @@
             <form action="/admin/settings" method="POST">
                 <div class="form-group">
                     <label>Global Announcement Banner (leave blank to hide)</label>
-                    <input type="text" name="announcement_banner" class="form-control" placeholder="e.g. Live INR & multi-currency FX engine v4.0 online!" value="{{.Settings.AnnouncementBanner}}">
+                    <input type="text" name="announcement_banner" class="form-control" placeholder="e.g. Live Split-Bills, Net Worth & PDF Statements now live!" value="{{.Settings.AnnouncementBanner}}">
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
@@ -254,22 +280,22 @@
     </div>
 </div>
 
-<!-- Provision User Modal -->
+<!-- Provision Standard User Modal -->
 <div class="modal-backdrop" id="createUserModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>🛡️ Provision New Account</h3>
+            <h3>👤 Provision User Account</h3>
             <button class="modal-close" onclick="closeCreateUserModal()">&times;</button>
         </div>
         <form action="/admin/users/create" method="POST">
             <div class="modal-body">
                 <div class="form-group">
                     <label>Username</label>
-                    <input type="text" name="username" class="form-control" placeholder="e.g. ops_lead" required>
+                    <input type="text" name="username" class="form-control" placeholder="e.g. aarav_user" required>
                 </div>
                 <div class="form-group">
                     <label>Email Address</label>
-                    <input type="email" name="email" class="form-control" placeholder="ops@pulsematrix.ai" required>
+                    <input type="email" name="email" class="form-control" placeholder="user@example.com" required>
                 </div>
                 <div class="form-group">
                     <label>Temporary Password (min 6 chars)</label>

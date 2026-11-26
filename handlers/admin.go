@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -19,10 +20,18 @@ type AdminHandler struct {
 	DB              *db.DB
 	Templates       *template.Template
 	CurrencyService *services.CurrencyService
+	MetricsService  *services.MetricsService
+	WorkerService   *services.WorkerService
 }
 
-func NewAdminHandler(database *db.DB, tmpl *template.Template, cs *services.CurrencyService) *AdminHandler {
-	return &AdminHandler{DB: database, Templates: tmpl, CurrencyService: cs}
+func NewAdminHandler(database *db.DB, tmpl *template.Template, cs *services.CurrencyService, ms *services.MetricsService, ws *services.WorkerService) *AdminHandler {
+	return &AdminHandler{
+		DB:              database,
+		Templates:       tmpl,
+		CurrencyService: cs,
+		MetricsService:  ms,
+		WorkerService:   ws,
+	}
 }
 
 func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +51,6 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 	_ = h.DB.QueryRow(`SELECT COUNT(*) FROM savings_goals`).Scan(&stats.TotalGoals)
 
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
-	roleFilter := strings.TrimSpace(r.URL.Query().Get("role"))
-
 	userQuery := `
 		SELECT u.id, u.username, u.email, u.role, u.status, u.preferred_currency, u.monthly_budget_goal,
 		       COALESCE(u.last_login_at, ''), strftime('%Y-%m-%d', u.created_at),
@@ -58,10 +65,6 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 		userQuery += ` AND (u.username LIKE ? OR u.email LIKE ?)`
 		pat := "%" + q + "%"
 		args = append(args, pat, pat)
-	}
-	if roleFilter == "admin" || roleFilter == "user" {
-		userQuery += ` AND u.role = ?`
-		args = append(args, roleFilter)
 	}
 	userQuery += ` ORDER BY CASE WHEN u.role = 'admin' THEN 0 ELSE 1 END, u.id DESC`
 
@@ -126,13 +129,18 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	viewCtx["Title"] = "Admin Control Plane"
+	var telemetry services.MetricsSnapshot
+	if h.MetricsService != nil {
+		telemetry = h.MetricsService.Snapshot()
+	}
+
+	viewCtx["Title"] = "Owner Control Plane"
 	viewCtx["ActivePage"] = "admin"
 	viewCtx["AdminID"] = adminID
 	viewCtx["Stats"] = stats
+	viewCtx["Telemetry"] = telemetry
 	viewCtx["Users"] = users
 	viewCtx["Search"] = q
-	viewCtx["RoleFilter"] = roleFilter
 	viewCtx["Anomalies"] = anomalies
 	viewCtx["AuditLogs"] = auditLogs
 	viewCtx["Settings"] = h.DB.GetSystemSettings()
@@ -143,35 +151,31 @@ func (h *AdminHandler) Show(w http.ResponseWriter, r *http.Request) {
 	_ = h.Templates.Execute(w, viewCtx)
 }
 
-func (h *AdminHandler) ToggleRole(w http.ResponseWriter, r *http.Request) {
+func (h *AdminHandler) MetricsJSON(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if h.MetricsService == nil {
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "unavailable"})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(h.MetricsService.Snapshot())
+}
+
+func (h *AdminHandler) PrometheusMetrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	if h.MetricsService == nil {
+		_, _ = w.Write([]byte("# metrics disabled\n"))
+		return
+	}
+	_, _ = w.Write([]byte(h.MetricsService.PrometheusText()))
+}
+
+func (h *AdminHandler) TriggerWorker(w http.ResponseWriter, r *http.Request) {
 	adminID := r.Context().Value(middleware.UserIDKey).(int64)
-	targetID, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
-	if err != nil || targetID <= 0 {
-		http.Redirect(w, r, "/admin?error=Invalid+user+ID", http.StatusSeeOther)
-		return
+	if h.WorkerService != nil {
+		h.WorkerService.RunCycle()
 	}
-	if targetID == adminID {
-		http.Redirect(w, r, "/admin?error=You+cannot+change+your+own+admin+role", http.StatusSeeOther)
-		return
-	}
-
-	var curRole, uname string
-	if err := h.DB.QueryRow(`SELECT role, username FROM users WHERE id = ?`, targetID).Scan(&curRole, &uname); err != nil {
-		http.Redirect(w, r, "/admin?error=User+not+found", http.StatusSeeOther)
-		return
-	}
-
-	newRole := "admin"
-	if curRole == "admin" {
-		newRole = "user"
-	}
-
-	_, _ = h.DB.Exec(`UPDATE users SET role = ? WHERE id = ?`, newRole, targetID)
-	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'admin_role_change', ?)`,
-		adminID, fmt.Sprintf("Changed role of %s (ID %d) from %s to %s", uname, targetID, curRole, newRole),
-	)
-
-	http.Redirect(w, r, fmt.Sprintf("/admin?success=Updated+%s+role+to+%s", uname, newRole), http.StatusSeeOther)
+	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'owner_worker_sweep', 'Manually triggered background anomaly & subscription sweep')`, adminID)
+	http.Redirect(w, r, "/admin?success=Background+anomaly+%26+renewal+sweep+completed", http.StatusSeeOther)
 }
 
 func (h *AdminHandler) ToggleStatus(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +186,7 @@ func (h *AdminHandler) ToggleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if targetID == adminID {
-		http.Redirect(w, r, "/admin?error=You+cannot+suspend+your+own+account", http.StatusSeeOther)
+		http.Redirect(w, r, "/admin?error=You+cannot+suspend+the+owner+account", http.StatusSeeOther)
 		return
 	}
 
@@ -211,8 +215,6 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.FormValue("email"))
 	password := r.FormValue("password")
 
-	// Owner-only admin policy: provisioned accounts are always standard users
-	role := "user"
 	if username == "" || email == "" || len(password) < 6 {
 		http.Redirect(w, r, "/admin?error=Provide+username,+email,+and+a+password+of+at+least+6+characters", http.StatusSeeOther)
 		return
@@ -225,9 +227,10 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settings := h.DB.GetSystemSettings()
+	// Always provision as standard 'user' — ONLY the owner holds admin privileges
 	res, err := h.DB.Exec(
-		`INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal) VALUES (?, ?, ?, ?, 'active', 'INR', ?)`,
-		username, email, string(hashed), role, settings.DefaultBudgetGoal,
+		`INSERT INTO users (username, email, password, role, status, preferred_currency, monthly_budget_goal) VALUES (?, ?, ?, 'user', 'active', 'INR', ?)`,
+		username, email, string(hashed), settings.DefaultBudgetGoal,
 	)
 	if err != nil {
 		http.Redirect(w, r, "/admin?error=Username+or+email+already+exists", http.StatusSeeOther)
@@ -237,10 +240,10 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	newUID, _ := res.LastInsertId()
 	_ = h.DB.SeedDefaults(newUID)
 	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'admin_create_user', ?)`,
-		adminID, fmt.Sprintf("Provisioned %s account: %s (%s)", role, username, email),
+		adminID, fmt.Sprintf("Provisioned standard user account: %s (%s)", username, email),
 	)
 
-	http.Redirect(w, r, fmt.Sprintf("/admin?success=Created+%s+account+%s", role, username), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/admin?success=Created+user+account+%s", username), http.StatusSeeOther)
 }
 
 func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +254,7 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if targetID == adminID {
-		http.Redirect(w, r, "/admin?error=You+cannot+delete+your+own+account", http.StatusSeeOther)
+		http.Redirect(w, r, "/admin?error=You+cannot+delete+the+owner+account", http.StatusSeeOther)
 		return
 	}
 

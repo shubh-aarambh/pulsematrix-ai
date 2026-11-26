@@ -1,9 +1,14 @@
 package handlers
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -19,17 +24,70 @@ type BankSyncHandler struct {
 	Templates       *template.Template
 	AIService       *services.AIService
 	CurrencyService *services.CurrencyService
+	MetricsService  *services.MetricsService
 	JWTSecret       string
+	WebhookSecret   string
 }
 
-func NewBankSyncHandler(database *db.DB, tmpl *template.Template, ai *services.AIService, cs *services.CurrencyService, jwtSecret string) *BankSyncHandler {
+func NewBankSyncHandler(database *db.DB, tmpl *template.Template, ai *services.AIService, cs *services.CurrencyService, ms *services.MetricsService, jwtSecret, webhookSecret string) *BankSyncHandler {
 	return &BankSyncHandler{
 		DB:              database,
 		Templates:       tmpl,
 		AIService:       ai,
 		CurrencyService: cs,
+		MetricsService:  ms,
 		JWTSecret:       jwtSecret,
+		WebhookSecret:   webhookSecret,
 	}
+}
+
+// readAndVerifyWebhook reads body once, validates optional HMAC-SHA256 X-Webhook-Signature
+// (for external unauthenticated callers when WEBHOOK_SECRET is configured), and checks X-Idempotency-Key.
+func (h *BankSyncHandler) readAndVerifyWebhook(w http.ResponseWriter, r *http.Request) ([]byte, string, bool) {
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		WriteJSONError(w, http.StatusBadRequest, "Failed to read request body")
+		return nil, "", false
+	}
+
+	// Verify HMAC-SHA256 signature for external webhook callers when WEBHOOK_SECRET is set
+	_, isBrowserSession := ExtractOptionalUserID(r, h.JWTSecret)
+	if h.WebhookSecret != "" && !isBrowserSession {
+		sigHeader := strings.TrimPrefix(strings.TrimSpace(r.Header.Get("X-Webhook-Signature")), "sha256=")
+		mac := hmac.New(sha256.New, []byte(h.WebhookSecret))
+		mac.Write(bodyBytes)
+		expected := hex.EncodeToString(mac.Sum(nil))
+		if !hmac.Equal([]byte(strings.ToLower(sigHeader)), []byte(expected)) {
+			WriteJSONError(w, http.StatusUnauthorized, "Invalid HMAC-SHA256 webhook signature")
+			return nil, "", false
+		}
+	}
+
+	// Check X-Idempotency-Key for safe duplicate retry deduplication
+	idemKey := strings.TrimSpace(r.Header.Get("X-Idempotency-Key"))
+	if idemKey != "" {
+		var cachedResp string
+		if err := h.DB.QueryRow(`SELECT response FROM idempotency_keys WHERE key = ?`, idemKey).Scan(&cachedResp); err == nil && cachedResp != "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Idempotency-Replay", "true")
+			_, _ = w.Write([]byte(cachedResp))
+			return nil, idemKey, false
+		}
+	}
+
+	return bodyBytes, idemKey, true
+}
+
+func (h *BankSyncHandler) writeIdempotentJSON(w http.ResponseWriter, idemKey string, payload map[string]interface{}) {
+	raw, _ := json.Marshal(payload)
+	if idemKey != "" {
+		_, _ = h.DB.Exec(`INSERT OR IGNORE INTO idempotency_keys (key, response) VALUES (?, ?)`, idemKey, string(raw))
+	}
+	if h.MetricsService != nil {
+		h.MetricsService.IncWebhook()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(raw)
 }
 
 func (h *BankSyncHandler) resolveWebhookUserID(r *http.Request) (int64, error) {
@@ -76,7 +134,7 @@ func (h *BankSyncHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	viewCtx["Title"] = "Integrations & Webhooks"
+	viewCtx["Title"] = "UPI & Webhook Integrations"
 	viewCtx["ActivePage"] = "bank-sync"
 	viewCtx["Logs"] = logs
 
@@ -86,9 +144,13 @@ func (h *BankSyncHandler) Show(w http.ResponseWriter, r *http.Request) {
 
 func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	bodyBytes, idemKey, ok := h.readAndVerifyWebhook(w, r)
+	if !ok {
+		return
+	}
 
 	var payload models.BankWebhookPayload
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&payload); err != nil {
 		WriteJSONError(w, http.StatusBadRequest, "Invalid webhook JSON body")
 		return
 	}
@@ -156,7 +218,7 @@ func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 		userID, fmt.Sprintf("Ingested %.2f %s (₹%.2f INR) from %s (TxID: %s)", payload.Amount, payload.Currency, baseAmount, payload.Merchant, payload.TransactionID),
 	)
 
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	h.writeIdempotentJSON(w, idemKey, map[string]interface{}{
 		"status":           "success",
 		"message":          "Bank transaction ingested into ledger",
 		"transactionId":    payload.TransactionID,
@@ -168,13 +230,17 @@ func (h *BankSyncHandler) WebhookAPI(w http.ResponseWriter, r *http.Request) {
 
 func (h *BankSyncHandler) SMSIngestionAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	bodyBytes, idemKey, ok := h.readAndVerifyWebhook(w, r)
+	if !ok {
+		return
+	}
 
 	var req struct {
 		SMS    string `json:"sms"`
 		Sender string `json:"sender"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.SMS) == "" {
+	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&req); err != nil || strings.TrimSpace(req.SMS) == "" {
 		WriteJSONError(w, http.StatusBadRequest, "SMS text body is required")
 		return
 	}
@@ -234,7 +300,7 @@ func (h *BankSyncHandler) SMSIngestionAPI(w http.ResponseWriter, r *http.Request
 		userID, fmt.Sprintf("Parsed Payment SMS from %s: %.2f %s (₹%.2f INR) at %s", method, parsed.Amount, parsed.Currency, baseAmount, parsed.Vendor),
 	)
 
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	h.writeIdempotentJSON(w, idemKey, map[string]interface{}{
 		"status":           "success",
 		"message":          "Payment SMS parsed and added to ledger",
 		"extractedData":    parsed,
@@ -246,6 +312,10 @@ func (h *BankSyncHandler) SMSIngestionAPI(w http.ResponseWriter, r *http.Request
 
 func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	bodyBytes, idemKey, ok := h.readAndVerifyWebhook(w, r)
+	if !ok {
+		return
+	}
 
 	var payload struct {
 		AppName       string  `json:"appName"`
@@ -258,7 +328,7 @@ func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Re
 		Date          string  `json:"date"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || strings.TrimSpace(payload.Merchant) == "" || payload.Amount <= 0 {
+	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&payload); err != nil || strings.TrimSpace(payload.Merchant) == "" || payload.Amount <= 0 {
 		WriteJSONError(w, http.StatusBadRequest, "Invalid payment webhook payload")
 		return
 	}
@@ -313,7 +383,7 @@ func (h *BankSyncHandler) PaymentAppWebhookAPI(w http.ResponseWriter, r *http.Re
 		userID, fmt.Sprintf("Ingested %.2f %s (₹%.2f INR) from %s via %s (Txn: %s)", payload.Amount, payload.Currency, baseAmount, payload.Merchant, payload.AppName, payload.TxnID),
 	)
 
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	h.writeIdempotentJSON(w, idemKey, map[string]interface{}{
 		"status":           "success",
 		"message":          fmt.Sprintf("Payment from %s successfully recorded into PulseMatrix Ledger", payload.AppName),
 		"txnId":            payload.TxnID,

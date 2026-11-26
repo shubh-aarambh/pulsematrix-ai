@@ -1,0 +1,139 @@
+{{define "content"}}
+<div class="page-container statement-page">
+    <!-- Action Header (Hidden in Print) -->
+    <div class="card no-print">
+        <div class="card-header-flex" style="margin-bottom:0;">
+            <div>
+                <h3>📄 Monthly Executive Financial Statement</h3>
+                <p class="subtitle">Private-banking style snapshot ready to print or save as PDF ({{.CurrencyCode}})</p>
+            </div>
+            <div class="action-buttons">
+                <a href="/transactions/export/csv" class="btn btn-outline">📥 Export Ledger CSV</a>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printable Executive Statement Card -->
+    <div class="card statement-sheet">
+        <div class="statement-header">
+            <div>
+                <div class="brand-text" style="font-size:1.35rem; font-weight:800;">Pulse<span class="brand-accent">Matrix</span> AI</div>
+                <div class="text-muted text-sm">Personal Wealth &amp; Cashflow Statement — {{.StatementMonth}}</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="text-bold">Account Holder: {{.Username}}</div>
+                <div class="text-muted font-mono text-sm">Generated: {{.GeneratedAt}} • Currency: {{.CurrencyCode}}</div>
+            </div>
+        </div>
+
+        <div class="radar-stats-grid mt-3">
+            <div class="radar-stat-box">
+                <span class="stat-title">Monthly Income</span>
+                <span class="stat-number text-success">{{dispWhole .Health.MonthlyIncome .DisplayRate .CurrencySymbol}}</span>
+                <span class="stat-desc">Savings Rate: {{.Health.SavingsRate}}%</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Monthly Spend</span>
+                <span class="stat-number">{{dispWhole .Health.MonthlySpend .DisplayRate .CurrencySymbol}}</span>
+                <span class="stat-desc">Budget Used: {{.Health.BudgetUtilization}}%</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Net Worth</span>
+                <span class="stat-number text-cyan">{{dispWhole .NetWorth .DisplayRate .CurrencySymbol}}</span>
+                <span class="stat-desc">Assets {{dispWhole .TotalAssets .DisplayRate .CurrencySymbol}} / Debt {{dispWhole .TotalLiabilities .DisplayRate .CurrencySymbol}}</span>
+            </div>
+            <div class="radar-stat-box">
+                <span class="stat-title">Health Rating</span>
+                <span class="stat-number text-accent">{{.Health.Score}}/100</span>
+                <span class="stat-desc">{{.Health.Rating}} • {{.Health.AnomalyCount}} Alert(s)</span>
+            </div>
+        </div>
+
+        <!-- Category Breakdown Table -->
+        <h3 class="mt-4" style="margin-bottom:0.75rem;">1. Expense Allocation by Category</h3>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Share (%)</th>
+                        <th>Total ({{.CurrencyCode}})</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .CategorySpends}}
+                    <tr>
+                        <td>{{.Icon}} {{.Name}}</td>
+                        <td class="font-mono">{{.Percentage}}%</td>
+                        <td class="font-mono text-bold">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
+                    </tr>
+                    {{else}}
+                    <tr><td colspan="3" class="text-muted">No expenses recorded.</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Savings Goals Summary -->
+        <h3 class="mt-4" style="margin-bottom:0.75rem;">2. Savings Goals Progress</h3>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Goal</th>
+                        <th>Target Date</th>
+                        <th>Saved</th>
+                        <th>Target</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Goals}}
+                    <tr>
+                        <td>{{.Icon}} {{.Name}}</td>
+                        <td class="font-mono">{{.TargetDate}}</td>
+                        <td class="font-mono">{{dispWhole .CurrentAmount $.DisplayRate $.CurrencySymbol}}</td>
+                        <td class="font-mono">{{dispWhole .TargetAmount $.DisplayRate $.CurrencySymbol}}</td>
+                        <td class="font-mono text-success">{{.ProgressPct}}%</td>
+                    </tr>
+                    {{else}}
+                    <tr><td colspan="5" class="text-muted">No savings goals configured.</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Active Recurring Commitments -->
+        <h3 class="mt-4" style="margin-bottom:0.75rem;">3. Active Recurring Commitments &amp; Split Balances</h3>
+        <div class="progress-labels" style="margin-bottom:0.8rem;">
+            <span>Pending Receivables (Owed to You): <strong>{{dispMoney .OwedToMe .DisplayRate .CurrencySymbol}}</strong></span>
+            <span>Pending Payables (You Owe): <strong>{{dispMoney .IOwe .DisplayRate .CurrencySymbol}}</strong></span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Cycle</th>
+                        <th>Next Renewal</th>
+                        <th>Amount ({{.CurrencyCode}})</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Subscriptions}}
+                    <tr>
+                        <td class="text-bold">{{.Name}}</td>
+                        <td>{{.BillingCycle}}</td>
+                        <td class="font-mono">{{.NextBillingDate}}</td>
+                        <td class="font-mono">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
+                    </tr>
+                    {{else}}
+                    <tr><td colspan="4" class="text-muted">No active subscriptions.</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}

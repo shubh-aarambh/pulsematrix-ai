@@ -1,0 +1,182 @@
+{{define "content"}}
+<div class="page-container">
+    <!-- Hero Net Worth Bento -->
+    <div class="bento-grid">
+        <div class="card bento-hero bento-span-6">
+            <div class="card-header-flex" style="margin-bottom:0;">
+                <div>
+                    <span class="card-label">Live Total Net Worth ({{.CurrencyCode}})</span>
+                    <div class="hero-balance {{if ge .NetWorth 0.0}}text-success{{else}}text-danger{{end}}">
+                        {{dispWhole .NetWorth .DisplayRate .CurrencySymbol}}
+                    </div>
+                </div>
+                <button class="btn btn-primary-sm" onclick="openAddNetWorthModal()">+ Add Account</button>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill fill-emerald" {{safeWidthStyle .AssetSharePct}}></div>
+                </div>
+                <div class="progress-labels">
+                    <span>Assets: {{.AssetSharePct}}%</span>
+                    <span>Debt-to-Asset Ratio: {{.DebtRatio}}%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card metric-card bento-span-3">
+            <span class="card-label">Total Assets</span>
+            <div class="metric-value text-success">{{dispWhole .TotalAssets .DisplayRate .CurrencySymbol}}</div>
+            <span class="text-muted">Cash, SIPs, Stocks, Gold &amp; FDs</span>
+        </div>
+
+        <div class="card metric-card bento-span-3">
+            <span class="card-label">Total Liabilities</span>
+            <div class="metric-value text-danger">{{dispWhole .TotalLiabilities .DisplayRate .CurrencySymbol}}</div>
+            <span class="text-muted">Credit Cards &amp; Active Loans</span>
+        </div>
+    </div>
+
+    <!-- Assets vs Liabilities Side-by-Side -->
+    <div class="charts-row">
+        <!-- Assets Column -->
+        <div class="card flex-1">
+            <div class="card-header-flex">
+                <div>
+                    <h3>📈 Assets &amp; Investments</h3>
+                    <p class="subtitle">Update valuations anytime to keep net worth accurate</p>
+                </div>
+                <span class="badge badge-success">{{len .Assets}} Accounts</span>
+            </div>
+
+            <div class="renewal-list">
+                {{range .Assets}}
+                <div class="nw-item-card">
+                    <div class="nw-item-head">
+                        <div class="goal-title-wrap">
+                            <span style="font-size:1.3rem;">{{.Icon}}</span>
+                            <div>
+                                <div class="text-bold">{{.Name}}</div>
+                                <div class="text-muted text-sm">{{.Category}} • Updated {{.UpdatedAt}}</div>
+                            </div>
+                        </div>
+                        <div class="font-mono text-bold text-success">{{dispWhole .Value $.DisplayRate $.CurrencySymbol}}</div>
+                    </div>
+                    <div class="goal-actions">
+                        <form action="/networth/update" method="POST" class="contribute-form">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <input type="number" step="500" min="0" name="value" class="form-control form-control-sm" value="{{printf "%.0f" .Value}}">
+                            <button type="submit" class="btn btn-sm btn-secondary">Update ₹</button>
+                        </form>
+                        <form action="/networth/delete" method="POST" onsubmit="return confirm('Remove this asset?');">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <button type="submit" class="btn-icon-danger" title="Remove">&times;</button>
+                        </form>
+                    </div>
+                </div>
+                {{else}}
+                <div class="text-muted py-4">No assets added yet.</div>
+                {{end}}
+            </div>
+        </div>
+
+        <!-- Liabilities Column -->
+        <div class="card flex-1">
+            <div class="card-header-flex">
+                <div>
+                    <h3>💳 Liabilities &amp; Debt</h3>
+                    <p class="subtitle">Track credit card balances, EMIs &amp; loans</p>
+                </div>
+                <span class="badge badge-danger">{{len .Liabilities}} Items</span>
+            </div>
+
+            <div class="renewal-list">
+                {{range .Liabilities}}
+                <div class="nw-item-card">
+                    <div class="nw-item-head">
+                        <div class="goal-title-wrap">
+                            <span style="font-size:1.3rem;">{{.Icon}}</span>
+                            <div>
+                                <div class="text-bold">{{.Name}}</div>
+                                <div class="text-muted text-sm">{{.Category}} • Updated {{.UpdatedAt}}</div>
+                            </div>
+                        </div>
+                        <div class="font-mono text-bold text-danger">-{{dispWhole .Value $.DisplayRate $.CurrencySymbol}}</div>
+                    </div>
+                    <div class="goal-actions">
+                        <form action="/networth/update" method="POST" class="contribute-form">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <input type="number" step="500" min="0" name="value" class="form-control form-control-sm" value="{{printf "%.0f" .Value}}">
+                            <button type="submit" class="btn btn-sm btn-secondary">Update ₹</button>
+                        </form>
+                        <form action="/networth/delete" method="POST" onsubmit="return confirm('Remove this liability?');">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <button type="submit" class="btn-icon-danger" title="Remove">&times;</button>
+                        </form>
+                    </div>
+                </div>
+                {{else}}
+                <div class="text-muted py-4">Zero liabilities — debt-free! 🎉</div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Net Worth Modal -->
+<div class="modal-backdrop" id="addNetWorthModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>💎 Add Balance Sheet Item</h3>
+            <button class="modal-close" onclick="closeAddNetWorthModal()">&times;</button>
+        </div>
+        <form action="/networth/add" method="POST">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select name="kind" class="form-control">
+                            <option value="asset">Asset (+)</option>
+                            <option value="liability">Liability / Debt (-)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" class="form-control">
+                            <option value="Bank Cash">Bank Cash</option>
+                            <option value="Mutual Funds & Stocks">Mutual Funds &amp; Stocks</option>
+                            <option value="Fixed Deposit">Fixed Deposit / PPF</option>
+                            <option value="Gold">Gold / SGB</option>
+                            <option value="Crypto">Crypto</option>
+                            <option value="Real Estate">Real Estate</option>
+                            <option value="Credit Card">Credit Card Due</option>
+                            <option value="Loan">Loan / EMI</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Account / Asset Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Groww Nifty 50 SIP" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Current Value (₹ INR)</label>
+                        <input type="number" step="100" min="0" name="value" class="form-control" placeholder="150000" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Emoji Icon</label>
+                    <input type="text" name="icon" class="form-control" value="🏦">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddNetWorthModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add to Balance Sheet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddNetWorthModal() { document.getElementById('addNetWorthModal').style.display = 'flex'; }
+function closeAddNetWorthModal() { document.getElementById('addNetWorthModal').style.display = 'none'; }
+</script>
+{{end}}

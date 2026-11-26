@@ -139,6 +139,14 @@ func (h *DashboardHandler) Show(w http.ResponseWriter, r *http.Request) {
 		FROM subscriptions
 		WHERE user_id = ? AND status = 'active'`, userID).Scan(&activeSubCount, &activeSubTotal)
 
+	var totalAssets, totalLiabilities float64
+	_ = h.DB.QueryRow(`SELECT COALESCE(SUM(value), 0) FROM net_worth_items WHERE user_id = ? AND kind = 'asset'`, userID).Scan(&totalAssets)
+	_ = h.DB.QueryRow(`SELECT COALESCE(SUM(value), 0) FROM net_worth_items WHERE user_id = ? AND kind = 'liability'`, userID).Scan(&totalLiabilities)
+
+	var owedToMe, iOwe float64
+	_ = h.DB.QueryRow(`SELECT COALESCE(SUM(amount), 0) FROM split_expenses WHERE user_id = ? AND status = 'pending' AND direction = 'owed_to_me'`, userID).Scan(&owedToMe)
+	_ = h.DB.QueryRow(`SELECT COALESCE(SUM(amount), 0) FROM split_expenses WHERE user_id = ? AND status = 'pending' AND direction = 'i_owe'`, userID).Scan(&iOwe)
+
 	viewCtx["Title"] = "Command Center"
 	viewCtx["ActivePage"] = "dashboard"
 	viewCtx["Health"] = health
@@ -149,6 +157,8 @@ func (h *DashboardHandler) Show(w http.ResponseWriter, r *http.Request) {
 	viewCtx["CategorySpends"] = cats
 	viewCtx["ActiveSubCount"] = activeSubCount
 	viewCtx["ActiveSubTotal"] = activeSubTotal
+	viewCtx["NetWorth"] = totalAssets - totalLiabilities
+	viewCtx["NetSplitBalance"] = owedToMe - iOwe
 	viewCtx["FlashSuccess"] = r.URL.Query().Get("success")
 	viewCtx["Error"] = r.URL.Query().Get("error")
 

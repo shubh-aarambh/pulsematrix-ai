@@ -196,3 +196,27 @@ type SystemSettings struct {
 	AnomalyThreshold   float64
 	DefaultBudgetGoal  float64
 }
+
+type SplitExpense struct {
+	ID          int64   `json:"id"`
+	UserID      int64   `json:"userId"`
+	PersonName  string  `json:"personName"`
+	Description string  `json:"description"`
+	Amount      float64 `json:"amount"`
+	Currency    string  `json:"currency"`
+	Direction   string  `json:"direction"` // owed_to_me | i_owe
+	Status      string  `json:"status"`    // pending | settled
+	DueDate     string  `json:"dueDate"`
+	CreatedAt   string  `json:"createdAt"`
+}
+
+type NetWorthItem struct {
+	ID        int64   `json:"id"`
+	UserID    int64   `json:"userId"`
+	Name      string  `json:"name"`
+	Category  string  `json:"category"` // Bank, Mutual Funds, Stocks, Gold, Crypto, Real Estate, Credit Card, Loan
+	Kind      string  `json:"kind"`     // asset | liability
+	Value     float64 `json:"value"`
+	Icon      string  `json:"icon"`
+	UpdatedAt string  `json:"updatedAt"`
+}

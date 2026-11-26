@@ -29,9 +29,9 @@
 
         <div class="hero-quick-bar">
             <button type="button" class="quick-chip" onclick="openAddTxModal()">➕ Log Entry</button>
-            <button type="button" class="quick-chip" onclick="openReceiptModal()">📷 AI Scan</button>
-            <a href="/goals" class="quick-chip">🎯 Budgets &amp; Goals</a>
-            <button type="button" class="quick-chip" onclick="openFXModal()">💱 FX Calc</button>
+            <a href="/networth" class="quick-chip">💎 Net Worth: {{dispWhole .NetWorth .DisplayRate .CurrencySymbol}}</a>
+            <a href="/splits" class="quick-chip">🤝 Splits: {{dispMoneySigned .NetSplitBalance .DisplayRate .CurrencySymbol}}</a>
+            <a href="/report" class="quick-chip">📄 PDF Report</a>
         </div>
     </div>
 

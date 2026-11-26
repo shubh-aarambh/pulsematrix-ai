@@ -15,8 +15,9 @@ type contextKey string
 const UserIDKey contextKey = "userID"
 const UsernameKey contextKey = "username"
 const RoleKey contextKey = "role"
+const EmailKey contextKey = "email"
 
-// Auth enforces JWT authorization and live account status/role check.
+// Auth enforces JWT authorization and live active status/role verification from DB.
 func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -66,14 +67,16 @@ func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 			userID := int64(userIDFloat)
 			role := "user"
 			status := "active"
+			email := ""
 
 			if database != nil {
-				var dbUsername, dbRole, dbStatus string
-				if err := database.QueryRow(`SELECT username, role, status FROM users WHERE id = ?`, userID).Scan(&dbUsername, &dbRole, &dbStatus); err != nil {
+				var dbUsername, dbEmail, dbRole, dbStatus string
+				if err := database.QueryRow(`SELECT username, email, role, status FROM users WHERE id = ?`, userID).Scan(&dbUsername, &dbEmail, &dbRole, &dbStatus); err != nil {
 					handleUnauth(w, r)
 					return
 				}
 				username = dbUsername
+				email = dbEmail
 				role = dbRole
 				status = dbStatus
 			} else if rClaim, ok := claims["role"].(string); ok && rClaim != "" {
@@ -100,19 +103,25 @@ func Auth(secret string, database *db.DB) func(http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			ctx = context.WithValue(ctx, UsernameKey, username)
 			ctx = context.WithValue(ctx, RoleKey, role)
+			ctx = context.WithValue(ctx, EmailKey, email)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// RequireAdmin enforces strict owner-only admin access and returns 404 Not Found
-// to any non-admin so the admin section remains completely invisible to regular users.
-func RequireAdmin() func(http.Handler) http.Handler {
+// RequireOwnerAdmin strictly allows ONLY the platform owner admin account.
+// For any standard user or unauthorized probe, it returns a stealth 404 Not Found
+// so regular users never discover or see the admin section.
+func RequireOwnerAdmin(ownerEmail string) func(http.Handler) http.Handler {
+	normalizedOwner := strings.ToLower(strings.TrimSpace(ownerEmail))
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role, _ := r.Context().Value(RoleKey).(string)
-			if role != "admin" {
+			email, _ := r.Context().Value(EmailKey).(string)
+
+			isOwner := role == "admin" && (normalizedOwner == "" || strings.EqualFold(strings.TrimSpace(email), normalizedOwner))
+			if !isOwner {
 				http.NotFound(w, r)
 				return
 			}
@@ -122,14 +131,14 @@ func RequireAdmin() func(http.Handler) http.Handler {
 }
 
 func handleUnauth(w http.ResponseWriter, r *http.Request) {
-	// Stealth: never reveal /admin routes or redirect unauthenticated users to any admin login
-	if strings.HasPrefix(r.URL.Path, "/admin") {
-		http.NotFound(w, r)
-		return
-	}
 	if isAPIRequest(r) {
 		w.Header().Set("Content-Type", "application/json")
 		http.Error(w, `{"error":"Unauthorized access"}`, http.StatusUnauthorized)
+		return
+	}
+	// Stealth 404 for unauthenticated probes to /admin paths
+	if strings.HasPrefix(r.URL.Path, "/admin") {
+		http.NotFound(w, r)
 		return
 	}
 	http.Redirect(w, r, "/login", http.StatusSeeOther)

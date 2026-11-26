@@ -22,8 +22,9 @@ type AuthHandler struct {
 	AdminLoginTemplate *template.Template
 	RegisterTemplate   *template.Template
 	JWTSecret          string
-	AdminLoginPath     string
-	AdminAccessKey     string
+	OwnerEmail         string
+	OwnerAccessKey     string
+	AdminPortalPath    string
 }
 
 func isHTTPS(r *http.Request) bool {
@@ -83,30 +84,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Owner admin must sign in via the private owner console URL (not the public user form)
-	if role == "admin" {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = h.LoginTemplate.Execute(w, map[string]interface{}{
-			"Title":             "Sign In - PulseMatrix AI",
-			"Error":             "Invalid username/email or password.",
-			"AllowRegistration": h.DB.GetSystemSettings().AllowRegistration,
-		})
-		return
-	}
-
 	if status != "active" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden)
 		_ = h.LoginTemplate.Execute(w, map[string]interface{}{
 			"Title":             "Sign In - PulseMatrix AI",
-			"Error":             "Your account has been suspended. Please contact support.",
+			"Error":             "Your account has been suspended.",
 			"AllowRegistration": h.DB.GetSystemSettings().AllowRegistration,
 		})
 		return
 	}
 
-	if err := h.issueSessionCookie(w, r, id, dbUsername, "user"); err != nil {
+	if err := h.issueSessionCookie(w, r, id, dbUsername, role); err != nil {
 		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
 		return
 	}
@@ -118,39 +107,52 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-// ShowAdminLogin serves the unlisted, owner-only administrator sign-in page.
+// ShowAdminLogin serves the private owner-only gateway at AdminPortalPath.
 func (h *AuthHandler) ShowAdminLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("X-Robots-Tag", "noindex, nofollow")
 	_ = h.AdminLoginTemplate.Execute(w, map[string]interface{}{
-		"Title":          "Owner Console - PulseMatrix AI",
-		"AdminLoginPath": h.AdminLoginPath,
-		"Error":          r.URL.Query().Get("error"),
+		"Title":      "Owner Control Plane - PulseMatrix AI",
+		"Error":      r.URL.Query().Get("error"),
+		"PortalPath": h.AdminPortalPath,
 	})
 }
 
-// AdminLogin strictly verifies Owner Admin credentials + Owner Access Passkey.
+// AdminLogin enforces strict 3-factor owner verification:
+// 1) Owner account email/username & role == 'admin'
+// 2) Valid Bcrypt password
+// 3) Constant-time match against Owner Master Access Key (ADMIN_ACCESS_KEY)
 func (h *AuthHandler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	identifier := strings.TrimSpace(r.FormValue("username"))
 	password := r.FormValue("password")
 	accessKey := strings.TrimSpace(r.FormValue("access_key"))
 
-	keyValid := h.AdminAccessKey != "" &&
-		len(accessKey) == len(h.AdminAccessKey) &&
-		subtle.ConstantTimeCompare([]byte(accessKey), []byte(h.AdminAccessKey)) == 1
+	keyMatch := h.OwnerAccessKey != "" && subtle.ConstantTimeCompare([]byte(accessKey), []byte(h.OwnerAccessKey)) == 1
+	if !keyMatch {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusForbidden)
+		_ = h.AdminLoginTemplate.Execute(w, map[string]interface{}{
+			"Title":      "Owner Control Plane - PulseMatrix AI",
+			"Error":      "Invalid owner access key or credentials.",
+			"PortalPath": h.AdminPortalPath,
+		})
+		return
+	}
 
 	var id int64
-	var dbUsername, hash, role, status string
+	var dbUsername, dbEmail, hash, role, status string
 
-	err := h.DB.QueryRow(`SELECT id, username, password, role, status FROM users WHERE (username = ? OR email = ?) AND role = 'admin'`, identifier, identifier).Scan(&id, &dbUsername, &hash, &role, &status)
-	if !keyValid || err != nil || role != "admin" || status != "active" || bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
+	err := h.DB.QueryRow(`SELECT id, username, email, password, role, status FROM users WHERE username = ? OR email = ?`, identifier, identifier).Scan(&id, &dbUsername, &dbEmail, &hash, &role, &status)
+	isOwner := err == nil && role == "admin" && status == "active" &&
+		(h.OwnerEmail == "" || strings.EqualFold(strings.TrimSpace(dbEmail), strings.TrimSpace(h.OwnerEmail))) &&
+		bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+
+	if !isOwner {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("X-Robots-Tag", "noindex, nofollow")
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusForbidden)
 		_ = h.AdminLoginTemplate.Execute(w, map[string]interface{}{
-			"Title":          "Owner Console - PulseMatrix AI",
-			"AdminLoginPath": h.AdminLoginPath,
-			"Error":          "Access denied. Invalid owner credentials or passkey.",
+			"Title":      "Owner Control Plane - PulseMatrix AI",
+			"Error":      "Access denied. Owner-only authentication failed.",
+			"PortalPath": h.AdminPortalPath,
 		})
 		return
 	}
@@ -162,7 +164,7 @@ func (h *AuthHandler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 
 	nowStr := time.Now().Format("2006-01-02 15:04")
 	_, _ = h.DB.Exec(`UPDATE users SET last_login_at = ? WHERE id = ?`, nowStr, id)
-	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'owner_admin_login', ?)`, id, fmt.Sprintf("Owner admin %s authenticated", dbUsername))
+	_, _ = h.DB.Exec(`INSERT INTO audit_logs (user_id, action, details) VALUES (?, 'owner_admin_login', ?)`, id, fmt.Sprintf("Owner %s authenticated via private gateway", dbUsername))
 
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
@@ -184,7 +186,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_ = h.RegisterTemplate.Execute(w, map[string]interface{}{
 			"Title":             "Create Account - PulseMatrix AI",
-			"Error":             "New account registrations are currently paused.",
+			"Error":             "New user registrations are currently paused.",
 			"AllowRegistration": false,
 		})
 		return
