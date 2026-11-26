@@ -150,11 +150,47 @@ func main() {
 			return f
 		},
 		"formatDate": func(s string) string {
-			t, err := time.Parse("2006-01-02", s)
-			if err != nil {
-				return s
+			raw := strings.TrimSpace(s)
+			if raw == "" {
+				return "—"
 			}
-			return t.Format("02 Jan 2006")
+			layouts := []string{
+				time.RFC3339,
+				time.RFC3339Nano,
+				"2006-01-02T15:04:05Z",
+				"2006-01-02 15:04:05",
+				"2006-01-02",
+			}
+			for _, layout := range layouts {
+				if t, err := time.Parse(layout, raw); err == nil {
+					return t.Format("02 Jan 2006")
+				}
+			}
+			if len(raw) >= 10 {
+				if t, err := time.Parse("2006-01-02", raw[:10]); err == nil {
+					return t.Format("02 Jan 2006")
+				}
+			}
+			return raw
+		},
+		"formatDateTime": func(s string) string {
+			raw := strings.TrimSpace(s)
+			if raw == "" {
+				return "—"
+			}
+			layouts := []string{
+				time.RFC3339,
+				time.RFC3339Nano,
+				"2006-01-02T15:04:05Z",
+				"2006-01-02 15:04:05",
+				"2006-01-02",
+			}
+			for _, layout := range layouts {
+				if t, err := time.Parse(layout, raw); err == nil {
+					return t.Format("02 Jan 2006, 15:04")
+				}
+			}
+			return raw
 		},
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
@@ -268,7 +304,7 @@ func main() {
 			_ = json.NewEncoder(w).Encode(map[string]string{"status": "unhealthy", "error": err.Error()})
 			return
 		}
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "pulsematrix-ai", "version": "6.0", "baseCurrency": "INR"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "pulsematrix-ai", "version": "7.0", "baseCurrency": "INR"})
 	}).Methods("GET")
 
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))

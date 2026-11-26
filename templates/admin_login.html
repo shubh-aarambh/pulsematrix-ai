@@ -4,62 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}}</title>
-    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
-    <link rel="apple-touch-icon" href="/static/img/logo.svg">
-    <meta name="theme-color" content="#070709">
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=7">
+    <link rel="apple-touch-icon" href="/static/img/logo.svg?v=7">
+    <meta name="theme-color" content="#09090b">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=7">
 </head>
 <body class="auth-body admin-auth-body">
     <div class="auth-split">
-        <!-- Private Owner Security Terminal Panel -->
         <section class="auth-showcase admin-showcase">
             <div class="showcase-top">
                 <div class="brand-logo">
-                    <div class="logo-mark admin-logo-mark">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    </div>
-                    <span class="brand-text">Pulse<span class="admin-accent">Owner</span></span>
+                    <img src="/static/img/logo.svg?v=7" alt="PulseMatrix" width="28" height="28" class="brand-logo-img">
+                    <span class="brand-text">PulseMatrix <span class="admin-accent">Owner</span></span>
                 </div>
-                <span class="badge badge-warning">PRIVATE GATEWAY</span>
+                <span class="badge badge-warning">Private Gateway</span>
             </div>
 
             <div class="showcase-hero">
-                <h1>Owner-Only Control Plane &amp; Backend Telemetry.</h1>
-                <p>Stealth administrative gateway restricted exclusively to the platform owner. Protected by 3-factor verification: owner identity, bcrypt password, and constant-time Master Access Key.</p>
+                <h1>Owner control plane and runtime telemetry.</h1>
+                <p>Restricted administrative gateway accessible exclusively to the platform owner via 3-factor verification: owner identity, password, and constant-time access key.</p>
             </div>
 
             <div class="showcase-features">
                 <div class="showcase-feat">
-                    <span class="feat-icon">📡</span>
+                    <span class="feat-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    </span>
                     <div>
-                        <strong>Live Runtime &amp; Prometheus Telemetry</strong>
-                        <span>Inspect p95 latency, goroutines, heap MB, rate-limit drops &amp; worker runs</span>
+                        <strong>Runtime &amp; Prometheus telemetry</strong>
+                        <span>Monitor p95 HTTP latency, goroutines, heap allocation, rate limits, and worker sweeps</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
-                    <span class="feat-icon">🔐</span>
+                    <span class="feat-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    </span>
                     <div>
-                        <strong>Zero-Visibility Stealth RBAC</strong>
-                        <span>Standard users never see admin UI and receive 404 on admin routes</span>
+                        <strong>Stealth owner isolation</strong>
+                        <span>Invisible to standard users; unauthorized admin route requests return 404</span>
                     </div>
                 </div>
             </div>
 
             <div class="showcase-footer">
-                <span>Constant-Time Access Key Check • Token-Bucket Protected</span>
+                <span>Constant-time key verification · Token-bucket rate limited</span>
             </div>
         </section>
 
-        <!-- 3-Factor Owner Auth Card -->
         <section class="auth-panel">
             <div class="auth-card admin-auth-card">
                 <div class="auth-brand">
-                    <div class="admin-shield-pill">🔐 OWNER-ONLY ACCESS</div>
-                    <h2>Owner Authentication</h2>
-                    <p class="auth-subtitle">Enter owner credentials &amp; master access key</p>
+                    <div class="admin-shield-pill">Owner Access Only</div>
+                    <h2>Owner sign in</h2>
+                    <p class="auth-subtitle">Enter owner credentials and master access key</p>
                 </div>
 
                 {{if .Error}}
@@ -68,21 +68,21 @@
 
                 <form action="{{.PortalPath}}" method="POST" class="auth-form">
                     <div class="form-group">
-                        <label>Owner Username or Email</label>
+                        <label>Owner username or email</label>
                         <input type="text" name="username" class="form-control" placeholder="Owner identity" required autofocus>
                     </div>
 
                     <div class="form-group">
-                        <label>Owner Password</label>
+                        <label>Owner password</label>
                         <input type="password" name="password" class="form-control" placeholder="••••••••••••" required>
                     </div>
 
                     <div class="form-group">
-                        <label>Master Access Key</label>
-                        <input type="password" name="access_key" class="form-control font-mono" placeholder="PM-OWNER-••••" required>
+                        <label>Master access key</label>
+                        <input type="password" name="access_key" class="form-control font-mono" placeholder="PM-OWN-••••" required>
                     </div>
 
-                    <button type="submit" class="btn btn-admin btn-block btn-lg">Unlock Owner Control Plane &rarr;</button>
+                    <button type="submit" class="btn btn-admin btn-block btn-lg">Unlock owner console</button>
                 </form>
             </div>
         </section>

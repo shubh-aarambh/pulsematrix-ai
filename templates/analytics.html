@@ -1,34 +1,34 @@
 {{define "content"}}
 <div class="analytics-grid">
-    <!-- Top Radar Overview Card -->
-    <div class="card bg-gradient-dark">
+    <!-- Top Summary Card -->
+    <div class="card">
         <div class="card-header-flex">
             <div>
-                <h2>Intelligence Radar &amp; Risk Metrics</h2>
-                <p class="subtitle">Automated statistical anomaly detection, burn forecast &amp; portfolio pace ({{.CurrencyCode}})</p>
+                <h2>Financial Health &amp; Risk Summary</h2>
+                <p class="subtitle">Monthly pace, savings rate, and flagged spending alerts ({{.CurrencyCode}})</p>
             </div>
-            <div class="badge badge-primary">Pulse Matrix Engine v4.0</div>
+            <span class="badge badge-ghost">{{.Health.Rating}}</span>
         </div>
         <div class="radar-stats-grid">
             <div class="radar-stat-box">
-                <span class="stat-title">Overall Score</span>
-                <span class="stat-number text-accent">{{.Health.Score}}/100</span>
-                <span class="stat-desc">Status: {{.Health.Rating}}</span>
+                <span class="stat-title">Health score</span>
+                <span class="stat-number">{{.Health.Score}}/100</span>
+                <span class="stat-desc">Rating: {{.Health.Rating}}</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Net Savings Rate</span>
+                <span class="stat-title">Net savings rate</span>
                 <span class="stat-number text-success">{{.Health.SavingsRate}}%</span>
-                <span class="stat-desc">{{dispWhole .Health.NetSavings .DisplayRate .CurrencySymbol}} Monthly Surplus</span>
+                <span class="stat-desc">{{dispWhole .Health.NetSavings .DisplayRate .CurrencySymbol}} monthly surplus</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Daily Burn Avg</span>
-                <span class="stat-number text-cyan">{{dispWhole .Health.DailyBurnRate .DisplayRate .CurrencySymbol}}</span>
+                <span class="stat-title">Daily burn average</span>
+                <span class="stat-number">{{dispWhole .Health.DailyBurnRate .DisplayRate .CurrencySymbol}}</span>
                 <span class="stat-desc">Projected EOM: {{dispWhole .Health.ProjectedSpend .DisplayRate .CurrencySymbol}}</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Flagged Anomalies</span>
-                <span class="stat-number text-danger">{{.Health.AnomalyCount}}</span>
-                <span class="stat-desc">Duplicate or surge spend alerts</span>
+                <span class="stat-title">Flagged anomalies</span>
+                <span class="stat-number {{if gt .Health.AnomalyCount 0}}text-danger{{else}}text-success{{end}}">{{.Health.AnomalyCount}}</span>
+                <span class="stat-desc">Duplicate or high-value alerts</span>
             </div>
         </div>
     </div>
@@ -37,10 +37,10 @@
     <div class="card">
         <div class="card-header-flex">
             <div>
-                <h3>🔥 30-Day Daily Expenditure Matrix</h3>
-                <p class="subtitle">Visual intensity of daily outflow across the past 30 days ({{.CurrencyCode}})</p>
+                <h3>30-Day Daily Spending Activity</h3>
+                <p class="subtitle">Daily outflow intensity across the last 30 days ({{.CurrencyCode}})</p>
             </div>
-            <span class="badge badge-cyan">Safe Cap: {{dispWhole .Health.SafeDailyAllowance .DisplayRate .CurrencySymbol}}/day</span>
+            <span class="badge badge-primary">Safe daily cap: {{dispWhole .Health.SafeDailyAllowance .DisplayRate .CurrencySymbol}}</span>
         </div>
         <div class="heatmap-grid">
             {{range .Heatmap}}
@@ -66,7 +66,7 @@
     <div class="charts-row">
         <div class="card flex-1">
             <div class="card-header-flex">
-                <h3>Monthly Net Surplus Velocity ({{.CurrencyCode}})</h3>
+                <h3>Monthly Net Surplus ({{.CurrencyCode}})</h3>
             </div>
             <div class="chart-wrapper">
                 <canvas id="analyticsVelocityChart"></canvas>
@@ -74,7 +74,7 @@
         </div>
         <div class="card flex-1">
             <div class="card-header-flex">
-                <h3>Category Spend Distribution ({{.CurrencyCode}})</h3>
+                <h3>Category Spend Breakdown ({{.CurrencyCode}})</h3>
             </div>
             <div class="chart-wrapper">
                 <canvas id="analyticsCategoryChart"></canvas>

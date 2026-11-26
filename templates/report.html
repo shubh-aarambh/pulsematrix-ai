@@ -4,69 +4,71 @@
     <div class="card no-print">
         <div class="card-header-flex" style="margin-bottom:0;">
             <div>
-                <h3>📄 Monthly Executive Financial Statement</h3>
-                <p class="subtitle">Private-banking style snapshot ready to print or save as PDF ({{.CurrencyCode}})</p>
+                <h3>Monthly Financial Statement</h3>
+                <p class="subtitle">Clean printable summary ready to save as PDF ({{.CurrencyCode}})</p>
             </div>
             <div class="action-buttons">
-                <a href="/transactions/export/csv" class="btn btn-outline">📥 Export Ledger CSV</a>
-                <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+                <a href="/transactions/export/csv" class="btn btn-secondary-sm">Export CSV</a>
+                <button type="button" class="btn btn-primary-sm" onclick="window.print()">Print / Save PDF</button>
             </div>
         </div>
     </div>
 
-    <!-- Printable Executive Statement Card -->
+    <!-- Printable Statement -->
     <div class="card statement-sheet">
         <div class="statement-header">
-            <div>
-                <div class="brand-text" style="font-size:1.35rem; font-weight:800;">Pulse<span class="brand-accent">Matrix</span> AI</div>
-                <div class="text-muted text-sm">Personal Wealth &amp; Cashflow Statement — {{.StatementMonth}}</div>
+            <div style="display:flex; align-items:center; gap:0.65rem;">
+                <img src="/static/img/logo.svg?v=7" alt="PulseMatrix" width="28" height="28" class="brand-logo-img">
+                <div>
+                    <div style="font-size:1.15rem; font-weight:700; letter-spacing:-0.02em;">PulseMatrix</div>
+                    <div class="text-muted text-sm">Personal Financial Statement — {{.StatementMonth}}</div>
+                </div>
             </div>
             <div style="text-align:right;">
-                <div class="text-bold">Account Holder: {{.Username}}</div>
-                <div class="text-muted font-mono text-sm">Generated: {{.GeneratedAt}} • Currency: {{.CurrencyCode}}</div>
+                <div class="text-bold">{{.Username}}</div>
+                <div class="text-muted font-mono text-sm">Generated {{.GeneratedAt}} · {{.CurrencyCode}}</div>
             </div>
         </div>
 
         <div class="radar-stats-grid mt-3">
             <div class="radar-stat-box">
-                <span class="stat-title">Monthly Income</span>
+                <span class="stat-title">Monthly income</span>
                 <span class="stat-number text-success">{{dispWhole .Health.MonthlyIncome .DisplayRate .CurrencySymbol}}</span>
-                <span class="stat-desc">Savings Rate: {{.Health.SavingsRate}}%</span>
+                <span class="stat-desc">Savings rate: {{.Health.SavingsRate}}%</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Monthly Spend</span>
+                <span class="stat-title">Monthly spend</span>
                 <span class="stat-number">{{dispWhole .Health.MonthlySpend .DisplayRate .CurrencySymbol}}</span>
-                <span class="stat-desc">Budget Used: {{.Health.BudgetUtilization}}%</span>
+                <span class="stat-desc">Budget used: {{.Health.BudgetUtilization}}%</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Net Worth</span>
-                <span class="stat-number text-cyan">{{dispWhole .NetWorth .DisplayRate .CurrencySymbol}}</span>
+                <span class="stat-title">Net worth</span>
+                <span class="stat-number">{{dispWhole .NetWorth .DisplayRate .CurrencySymbol}}</span>
                 <span class="stat-desc">Assets {{dispWhole .TotalAssets .DisplayRate .CurrencySymbol}} / Debt {{dispWhole .TotalLiabilities .DisplayRate .CurrencySymbol}}</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Health Rating</span>
-                <span class="stat-number text-accent">{{.Health.Score}}/100</span>
-                <span class="stat-desc">{{.Health.Rating}} • {{.Health.AnomalyCount}} Alert(s)</span>
+                <span class="stat-title">Health score</span>
+                <span class="stat-number">{{.Health.Score}}/100</span>
+                <span class="stat-desc">{{.Health.Rating}} · {{.Health.AnomalyCount}} alert(s)</span>
             </div>
         </div>
 
-        <!-- Category Breakdown Table -->
-        <h3 class="mt-4" style="margin-bottom:0.75rem;">1. Expense Allocation by Category</h3>
+        <h3 class="mt-4" style="margin-bottom:0.65rem;">1. Spending by Category</h3>
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>Category</th>
-                        <th>Share (%)</th>
-                        <th>Total ({{.CurrencyCode}})</th>
+                        <th style="text-align:right;">Share</th>
+                        <th style="text-align:right;">Total ({{.CurrencyCode}})</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{range .CategorySpends}}
                     <tr>
-                        <td>{{.Icon}} {{.Name}}</td>
-                        <td class="font-mono">{{.Percentage}}%</td>
-                        <td class="font-mono text-bold">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
+                        <td>{{.Name}}</td>
+                        <td class="font-mono nowrap" style="text-align:right;">{{.Percentage}}%</td>
+                        <td class="font-mono text-bold nowrap" style="text-align:right;">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
                     </tr>
                     {{else}}
                     <tr><td colspan="3" class="text-muted">No expenses recorded.</td></tr>
@@ -75,27 +77,26 @@
             </table>
         </div>
 
-        <!-- Savings Goals Summary -->
-        <h3 class="mt-4" style="margin-bottom:0.75rem;">2. Savings Goals Progress</h3>
+        <h3 class="mt-4" style="margin-bottom:0.65rem;">2. Savings Goals</h3>
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>Goal</th>
                         <th>Target Date</th>
-                        <th>Saved</th>
-                        <th>Target</th>
-                        <th>Progress</th>
+                        <th style="text-align:right;">Saved</th>
+                        <th style="text-align:right;">Target</th>
+                        <th style="text-align:right;">Progress</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{range .Goals}}
                     <tr>
-                        <td>{{.Icon}} {{.Name}}</td>
-                        <td class="font-mono">{{.TargetDate}}</td>
-                        <td class="font-mono">{{dispWhole .CurrentAmount $.DisplayRate $.CurrencySymbol}}</td>
-                        <td class="font-mono">{{dispWhole .TargetAmount $.DisplayRate $.CurrencySymbol}}</td>
-                        <td class="font-mono text-success">{{.ProgressPct}}%</td>
+                        <td>{{.Name}}</td>
+                        <td class="font-mono nowrap">{{formatDate .TargetDate}}</td>
+                        <td class="font-mono nowrap" style="text-align:right;">{{dispWhole .CurrentAmount $.DisplayRate $.CurrencySymbol}}</td>
+                        <td class="font-mono nowrap" style="text-align:right;">{{dispWhole .TargetAmount $.DisplayRate $.CurrencySymbol}}</td>
+                        <td class="font-mono text-success nowrap" style="text-align:right;">{{.ProgressPct}}%</td>
                     </tr>
                     {{else}}
                     <tr><td colspan="5" class="text-muted">No savings goals configured.</td></tr>
@@ -104,11 +105,10 @@
             </table>
         </div>
 
-        <!-- Active Recurring Commitments -->
-        <h3 class="mt-4" style="margin-bottom:0.75rem;">3. Active Recurring Commitments &amp; Split Balances</h3>
-        <div class="progress-labels" style="margin-bottom:0.8rem;">
-            <span>Pending Receivables (Owed to You): <strong>{{dispMoney .OwedToMe .DisplayRate .CurrencySymbol}}</strong></span>
-            <span>Pending Payables (You Owe): <strong>{{dispMoney .IOwe .DisplayRate .CurrencySymbol}}</strong></span>
+        <h3 class="mt-4" style="margin-bottom:0.65rem;">3. Recurring Commitments &amp; Shared Balances</h3>
+        <div class="progress-labels" style="margin-bottom:0.75rem;">
+            <span>Owed to you: <strong class="font-mono">{{dispMoney .OwedToMe .DisplayRate .CurrencySymbol}}</strong></span>
+            <span>You owe: <strong class="font-mono">{{dispMoney .IOwe .DisplayRate .CurrencySymbol}}</strong></span>
         </div>
         <div class="table-responsive">
             <table class="data-table">
@@ -117,7 +117,7 @@
                         <th>Service</th>
                         <th>Cycle</th>
                         <th>Next Renewal</th>
-                        <th>Amount ({{.CurrencyCode}})</th>
+                        <th style="text-align:right;">Amount ({{.CurrencyCode}})</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,8 +125,8 @@
                     <tr>
                         <td class="text-bold">{{.Name}}</td>
                         <td>{{.BillingCycle}}</td>
-                        <td class="font-mono">{{.NextBillingDate}}</td>
-                        <td class="font-mono">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
+                        <td class="font-mono nowrap">{{formatDate .NextBillingDate}}</td>
+                        <td class="font-mono nowrap" style="text-align:right;">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
                     </tr>
                     {{else}}
                     <tr><td colspan="4" class="text-muted">No active subscriptions.</td></tr>

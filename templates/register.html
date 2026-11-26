@@ -4,59 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}}</title>
-    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
-    <link rel="apple-touch-icon" href="/static/img/logo.svg">
-    <meta name="theme-color" content="#04070a">
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=7">
+    <link rel="apple-touch-icon" href="/static/img/logo.svg?v=7">
+    <meta name="theme-color" content="#09090b">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script>(function(){var t=localStorage.getItem('pm_theme');if(t)document.documentElement.setAttribute('data-theme',t==='light'?'frost':t);})();</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=7">
+    <script>(function(){var t=localStorage.getItem('pm_theme_v7');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
 </head>
 <body class="auth-body">
     <div class="auth-split">
         <section class="auth-showcase">
             <div class="showcase-top">
                 <div class="brand-logo">
-                    <img src="/static/img/logo.svg" alt="PulseMatrix AI Logo" class="brand-logo-img">
-                    <span class="brand-text">Pulse<span class="brand-accent">Matrix</span> AI</span>
+                    <img src="/static/img/logo.svg?v=7" alt="PulseMatrix" width="28" height="28" class="brand-logo-img">
+                    <span class="brand-text">PulseMatrix</span>
                 </div>
-                <span class="badge badge-success">INSTANT ONBOARDING</span>
+                <span class="badge badge-ghost">Free Workspace</span>
             </div>
 
             <div class="showcase-hero">
-                <h1>Launch Your Personal Financial OS in 30 Seconds.</h1>
-                <p>Pre-configured in ₹ INR with 1-click USD/EUR/GBP live swap, category budget envelopes, savings goals, split-bills, net worth balance sheet, CSV bulk import, and your AI Strategist.</p>
+                <h1>Set up your personal finance workspace in seconds.</h1>
+                <p>Pre-configured in ₹ INR with instant USD, EUR, and GBP switching, category budgets, savings goals, shared bills, net worth tracking, CSV import, and an AI advisor.</p>
             </div>
 
             <div class="showcase-features">
                 <div class="showcase-feat">
-                    <span class="feat-icon">⚡</span>
+                    <span class="feat-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </span>
                     <div>
-                        <strong>Zero Setup Friction</strong>
-                        <span>Explore immediately with realistic Indian &amp; global sample data</span>
+                        <strong>Ready out of the box</strong>
+                        <span>Explore immediately with realistic sample transactions and categories</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
-                    <span class="feat-icon">🔒</span>
+                    <span class="feat-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </span>
                     <div>
-                        <strong>Private Isolated Ledger</strong>
-                        <span>Your own encrypted sessions, categories, net worth &amp; PDF reports</span>
+                        <strong>Isolated private ledger</strong>
+                        <span>Your own categories, budgets, net worth balances, and printable statements</span>
                     </div>
                 </div>
             </div>
 
             <div class="showcase-footer">
-                <span>Free Personal Tier • Multi-Currency Live FX • Export Anytime</span>
+                <span>Multi-currency live FX · Export your data anytime</span>
             </div>
         </section>
 
-        <!-- Clean User Register Panel (Zero Admin References) -->
+        <!-- Register Panel -->
         <section class="auth-panel">
             <div class="auth-card">
                 <div class="auth-brand">
-                    <h2>Create Your Account</h2>
-                    <p class="auth-subtitle">Initialize your PulseMatrix AI financial workspace</p>
+                    <h2>Create account</h2>
+                    <p class="auth-subtitle">Start tracking your finances with PulseMatrix</p>
                 </div>
 
                 {{if .Error}}
@@ -67,11 +71,11 @@
                 <form action="/register" method="POST" class="auth-form">
                     <div class="form-group">
                         <label>Username</label>
-                        <input type="text" name="username" class="form-control" placeholder="e.g. aarav_fin" required autofocus>
+                        <input type="text" name="username" class="form-control" placeholder="e.g. aarav" required autofocus>
                     </div>
 
                     <div class="form-group">
-                        <label>Email Address</label>
+                        <label>Email address</label>
                         <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
                     </div>
 
@@ -80,7 +84,7 @@
                         <input type="password" name="password" class="form-control" minlength="6" placeholder="••••••••••••" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block btn-lg">Create Workspace &rarr;</button>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Create account</button>
                 </form>
                 {{else}}
                 <div class="alert alert-danger">New registrations are currently closed.</div>
@@ -88,7 +92,7 @@
 
                 <div class="auth-footer">
                     <span>Already have an account?</span>
-                    <a href="/login" class="link-accent">Sign In</a>
+                    <a href="/login" class="link-accent">Sign in</a>
                 </div>
             </div>
         </section>

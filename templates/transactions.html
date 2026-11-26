@@ -1,44 +1,53 @@
 {{define "content"}}
 <div class="page-container">
-    <!-- Ledger Quick Summary Strip -->
+    <!-- Summary Strip -->
     <div class="ledger-summary-strip">
         <div class="summary-pill">
-            <span class="text-muted">Entries Shown</span>
+            <span class="text-muted">Entries</span>
             <strong class="font-mono">{{.TxCount}}</strong>
         </div>
         <div class="summary-pill">
-            <span class="text-muted">Filtered Volume ({{.CurrencyCode}})</span>
-            <strong class="font-mono text-success">{{dispMoney .TotalVolume .DisplayRate .CurrencySymbol}}</strong>
+            <span class="text-muted">Volume ({{.CurrencyCode}})</span>
+            <strong class="font-mono">{{dispMoney .TotalVolume .DisplayRate .CurrencySymbol}}</strong>
         </div>
         <a href="/transactions{{if not .OnlyAnomalies}}?anomaly=1{{end}}" class="summary-pill summary-pill-link {{if .OnlyAnomalies}}pill-warning-active{{end}}">
-            <span class="text-muted">Anomalies</span>
-            <strong class="font-mono {{if gt .AnomalyCount 0}}text-warning{{else}}text-success{{end}}">{{.AnomalyCount}} {{if .OnlyAnomalies}}(Filtered){{end}}</strong>
+            <span class="text-muted">Flagged</span>
+            <strong class="font-mono {{if gt .AnomalyCount 0}}text-warning{{else}}text-success{{end}}">{{.AnomalyCount}}{{if .OnlyAnomalies}} (Filtered){{end}}</strong>
         </a>
     </div>
 
-    <!-- Action Bar -->
+    <!-- Filter & Action Toolbar -->
     <div class="action-bar card">
         <form action="/transactions" method="GET" class="filter-form">
             <div class="search-input-group">
-                <span class="search-icon">🔍</span>
-                <input type="text" name="q" class="form-control" placeholder="Search merchant, description..." value="{{.Search}}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" name="q" class="form-control" placeholder="Search merchant or note…" value="{{.Search}}">
             </div>
-            <select name="category" class="form-control" onchange="this.form.submit()">
-                <option value="">All Categories</option>
+            <select name="category" class="form-control" style="width:auto; min-width:170px;" onchange="this.form.submit()">
+                <option value="">All categories</option>
                 {{range .Categories}}
-                <option value="{{.Name}}" {{if eq $.CatFilter .Name}}selected{{end}}>{{.Icon}} {{.Name}}</option>
+                <option value="{{.Name}}" {{if eq $.CatFilter .Name}}selected{{end}}>{{.Name}}</option>
                 {{end}}
             </select>
-            <button type="submit" class="btn btn-secondary">Filter</button>
+            <button type="submit" class="btn btn-secondary-sm">Apply</button>
             {{if or .Search .CatFilter .OnlyAnomalies}}
-            <a href="/transactions" class="btn btn-ghost">Reset</a>
+            <a href="/transactions" class="btn btn-ghost btn-sm">Clear</a>
             {{end}}
         </form>
 
         <div class="action-buttons">
-            <button class="btn btn-outline" onclick="openImportCsvModal()">📤 Import CSV</button>
-            <a href="/transactions/export/csv" class="btn btn-outline">📥 Export CSV</a>
-            <button class="btn btn-primary" onclick="openAddTxModal()">+ Add Entry</button>
+            <button type="button" class="btn btn-secondary-sm" onclick="openImportCsvModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>Import CSV</span>
+            </button>
+            <a href="/transactions/export/csv" class="btn btn-secondary-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Export CSV</span>
+            </a>
+            <button type="button" class="btn btn-primary-sm" onclick="openAddTxModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                <span>Record expense</span>
+            </button>
         </div>
     </div>
 
@@ -49,19 +58,19 @@
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Merchant / Vendor</th>
+                        <th>Merchant</th>
                         <th>Category</th>
-                        <th>Payment</th>
+                        <th>Method</th>
                         <th>Source</th>
-                        <th>Original</th>
-                        <th>Amount ({{.CurrencyCode}})</th>
-                        <th>Actions</th>
+                        <th style="text-align:right;">Original</th>
+                        <th style="text-align:right;">Amount ({{.CurrencyCode}})</th>
+                        <th style="text-align:right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{range .Transactions}}
                     <tr class="{{if .IsAnomaly}}table-row-warning{{end}}">
-                        <td><span class="font-mono text-muted">{{.Date}}</span></td>
+                        <td class="nowrap"><span class="font-mono text-muted">{{formatDate .Date}}</span></td>
                         <td>
                             <div class="vendor-cell">
                                 <span class="text-bold">{{.Vendor}}</span>
@@ -70,25 +79,23 @@
                                 {{end}}
                                 {{if .IsAnomaly}}
                                 <div class="anomaly-row-inline">
-                                    <span class="badge badge-warning" title="{{.AnomalyReason}}">⚠️ {{.AnomalyReason}}</span>
+                                    <span class="badge badge-warning" title="{{.AnomalyReason}}">{{.AnomalyReason}}</span>
                                     <form action="/transactions/resolve-anomaly" method="POST" style="display:inline;">
                                         <input type="hidden" name="id" value="{{.ID}}">
-                                        <button type="submit" class="btn-resolve-chip" title="Dismiss false positive">✓ Mark Safe</button>
+                                        <button type="submit" class="btn-resolve-chip" title="Dismiss flag">Mark safe</button>
                                     </form>
                                 </div>
                                 {{end}}
                             </div>
                         </td>
                         <td>
-                            <span class="cat-pill" {{safeBorderStyle .CategoryColor}}>
-                                {{.CategoryIcon}} {{.CategoryName}}
-                            </span>
+                            <span class="cat-pill" {{safeBorderStyle .CategoryColor}}>{{.CategoryName}}</span>
                         </td>
                         <td><span class="badge badge-ghost">{{.PaymentMethod}}</span></td>
-                        <td><span class="source-badge source-{{.Source}}">{{.Source}}</span></td>
-                        <td><span class="font-mono text-sm">{{printf "%.2f" .OriginalAmount}} {{.OriginalCurrency}}</span></td>
-                        <td><span class="text-bold font-mono text-lg">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</span></td>
-                        <td>
+                        <td><span class="source-badge">{{.Source}}</span></td>
+                        <td class="nowrap" style="text-align:right;"><span class="font-mono text-sm text-muted">{{printf "%.2f" .OriginalAmount}} {{.OriginalCurrency}}</span></td>
+                        <td class="nowrap" style="text-align:right;"><span class="text-bold font-mono">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</span></td>
+                        <td style="text-align:right;">
                             <div class="inline-actions">
                                 <button type="button" class="btn btn-sm btn-secondary"
                                     data-id="{{.ID}}"
@@ -99,18 +106,19 @@
                                     data-date="{{.Date}}"
                                     data-method="{{.PaymentMethod}}"
                                     data-description="{{.Description}}"
-                                    onclick="openEditTxModal(this)"
-                                    title="Edit">Edit</button>
-                                <form action="/transactions/delete" method="POST" style="display:inline;" onsubmit="return confirm('Delete transaction from ledger?');">
+                                    onclick="openEditTxModal(this)">Edit</button>
+                                <form action="/transactions/delete" method="POST" style="display:inline;" onsubmit="return confirm('Delete this transaction?');">
                                     <input type="hidden" name="id" value="{{.ID}}">
-                                    <button type="submit" class="btn-icon-danger" title="Delete">&times;</button>
+                                    <button type="submit" class="btn-icon-danger" title="Delete" aria-label="Delete">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                                    </button>
                                 </form>
                             </div>
                         </td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">No transactions matching filter criteria.</td>
+                        <td colspan="8" class="text-center py-5 text-muted">No transactions match the current filter.</td>
                     </tr>
                     {{end}}
                 </tbody>
@@ -123,7 +131,7 @@
 <div class="modal-backdrop" id="editTxModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>✏️ Edit Transaction</h3>
+            <h3>Edit Transaction</h3>
             <button class="modal-close" onclick="closeEditTxModal()">&times;</button>
         </div>
         <form action="/transactions/edit" method="POST">
@@ -131,7 +139,7 @@
             <div class="modal-body">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Merchant / Vendor</label>
+                        <label>Merchant / Payee</label>
                         <input type="text" name="vendor" id="editTxVendor" class="form-control" required>
                     </div>
                     <div class="form-group">
@@ -158,52 +166,51 @@
                         <label>Category</label>
                         <select name="category_id" id="editTxCategory" class="form-control">
                             {{range .Categories}}
-                            <option value="{{.ID}}">{{.Icon}} {{.Name}}</option>
+                            <option value="{{.ID}}">{{.Name}}</option>
                             {{end}}
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Payment Method</label>
+                        <label>Payment method</label>
                         <input type="text" name="payment_method" id="editTxMethod" class="form-control">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Description</label>
+                    <label>Note</label>
                     <input type="text" name="description" id="editTxDescription" class="form-control">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeEditTxModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Updates</button>
+                <button type="submit" class="btn btn-primary">Save updates</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- CSV Bulk Import Modal -->
+<!-- CSV Import Modal -->
 <div class="modal-backdrop" id="importCsvModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>📤 Bulk CSV Ledger Import</h3>
+            <h3>Import Transactions from CSV</h3>
             <button class="modal-close" onclick="closeImportCsvModal()">&times;</button>
         </div>
         <form action="/transactions/import/csv" method="POST" enctype="multipart/form-data">
             <div class="modal-body">
                 <p class="modal-subtitle">
-                    Upload a CSV statement with columns: <code>Date, Vendor, Amount, Currency, Category, Description, Payment Method</code>.
-                    Multi-currency rows are normalized to INR automatically using live FX rates.
+                    Columns: <code>Date, Vendor, Amount, Currency, Category, Description, Payment Method</code>. Foreign currencies convert automatically via live FX.
                 </p>
                 <div class="form-group">
-                    <label>Select CSV File (.csv)</label>
+                    <label>CSV File</label>
                     <input type="file" name="csvfile" accept=".csv,text/csv" class="form-control" required>
                 </div>
                 <div class="mt-3">
-                    <a href="/transactions/template/csv" class="link-accent text-sm">⬇ Download Sample CSV Template</a>
+                    <a href="/transactions/template/csv" class="link-accent text-sm">Download sample CSV template</a>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeImportCsvModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Import Transactions</button>
+                <button type="submit" class="btn btn-primary">Import</button>
             </div>
         </form>
     </div>

@@ -1,16 +1,19 @@
 {{define "content"}}
 <div class="page-container">
-    <!-- Hero Net Worth Bento -->
+    <!-- Hero Net Worth Row -->
     <div class="bento-grid">
         <div class="card bento-hero bento-span-6">
             <div class="card-header-flex" style="margin-bottom:0;">
                 <div>
-                    <span class="card-label">Live Total Net Worth ({{.CurrencyCode}})</span>
+                    <span class="card-label">Total net worth ({{.CurrencyCode}})</span>
                     <div class="hero-balance {{if ge .NetWorth 0.0}}text-success{{else}}text-danger{{end}}">
                         {{dispWhole .NetWorth .DisplayRate .CurrencySymbol}}
                     </div>
                 </div>
-                <button class="btn btn-primary-sm" onclick="openAddNetWorthModal()">+ Add Account</button>
+                <button type="button" class="btn btn-primary-sm" onclick="openAddNetWorthModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                    <span>Add account</span>
+                </button>
             </div>
 
             <div class="progress-container">
@@ -19,125 +22,122 @@
                 </div>
                 <div class="progress-labels">
                     <span>Assets: {{.AssetSharePct}}%</span>
-                    <span>Debt-to-Asset Ratio: {{.DebtRatio}}%</span>
+                    <span>Debt-to-asset: {{.DebtRatio}}%</span>
                 </div>
             </div>
         </div>
 
         <div class="card metric-card bento-span-3">
-            <span class="card-label">Total Assets</span>
+            <span class="card-label">Total assets</span>
             <div class="metric-value text-success">{{dispWhole .TotalAssets .DisplayRate .CurrencySymbol}}</div>
-            <span class="text-muted">Cash, SIPs, Stocks, Gold &amp; FDs</span>
+            <span class="text-muted text-sm">Cash, SIPs, stocks, gold &amp; FDs</span>
         </div>
 
         <div class="card metric-card bento-span-3">
-            <span class="card-label">Total Liabilities</span>
+            <span class="card-label">Total liabilities</span>
             <div class="metric-value text-danger">{{dispWhole .TotalLiabilities .DisplayRate .CurrencySymbol}}</div>
-            <span class="text-muted">Credit Cards &amp; Active Loans</span>
+            <span class="text-muted text-sm">Credit cards &amp; active loans</span>
         </div>
     </div>
 
-    <!-- Assets vs Liabilities Side-by-Side -->
+    <!-- Assets & Liabilities -->
     <div class="charts-row">
-        <!-- Assets Column -->
         <div class="card flex-1">
             <div class="card-header-flex">
                 <div>
-                    <h3>📈 Assets &amp; Investments</h3>
-                    <p class="subtitle">Update valuations anytime to keep net worth accurate</p>
+                    <h3>Assets &amp; Investments</h3>
+                    <p class="subtitle">Update balances anytime to keep your snapshot current</p>
                 </div>
-                <span class="badge badge-success">{{len .Assets}} Accounts</span>
+                <span class="badge badge-success">{{len .Assets}} accounts</span>
             </div>
 
             <div class="renewal-list">
                 {{range .Assets}}
                 <div class="nw-item-card">
                     <div class="nw-item-head">
-                        <div class="goal-title-wrap">
-                            <span style="font-size:1.3rem;">{{.Icon}}</span>
-                            <div>
-                                <div class="text-bold">{{.Name}}</div>
-                                <div class="text-muted text-sm">{{.Category}} • Updated {{.UpdatedAt}}</div>
-                            </div>
+                        <div>
+                            <div class="text-bold">{{.Name}}</div>
+                            <div class="text-muted text-sm">{{.Category}} · Updated {{formatDate .UpdatedAt}}</div>
                         </div>
-                        <div class="font-mono text-bold text-success">{{dispWhole .Value $.DisplayRate $.CurrencySymbol}}</div>
+                        <div class="font-mono text-bold text-success nowrap">{{dispWhole .Value $.DisplayRate $.CurrencySymbol}}</div>
                     </div>
                     <div class="goal-actions">
                         <form action="/networth/update" method="POST" class="contribute-form">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <input type="number" step="500" min="0" name="value" class="form-control form-control-sm" value="{{printf "%.0f" .Value}}">
-                            <button type="submit" class="btn btn-sm btn-secondary">Update ₹</button>
+                            <button type="submit" class="btn btn-sm btn-secondary">Update</button>
                         </form>
                         <form action="/networth/delete" method="POST" onsubmit="return confirm('Remove this asset?');">
                             <input type="hidden" name="id" value="{{.ID}}">
-                            <button type="submit" class="btn-icon-danger" title="Remove">&times;</button>
+                            <button type="submit" class="btn-icon-danger" title="Remove" aria-label="Remove">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                            </button>
                         </form>
                     </div>
                 </div>
                 {{else}}
-                <div class="text-muted py-4">No assets added yet.</div>
+                <div class="text-muted text-sm py-4">No assets added yet.</div>
                 {{end}}
             </div>
         </div>
 
-        <!-- Liabilities Column -->
         <div class="card flex-1">
             <div class="card-header-flex">
                 <div>
-                    <h3>💳 Liabilities &amp; Debt</h3>
-                    <p class="subtitle">Track credit card balances, EMIs &amp; loans</p>
+                    <h3>Liabilities &amp; Debt</h3>
+                    <p class="subtitle">Track credit cards, EMIs, and loans</p>
                 </div>
-                <span class="badge badge-danger">{{len .Liabilities}} Items</span>
+                <span class="badge badge-danger">{{len .Liabilities}} items</span>
             </div>
 
             <div class="renewal-list">
                 {{range .Liabilities}}
                 <div class="nw-item-card">
                     <div class="nw-item-head">
-                        <div class="goal-title-wrap">
-                            <span style="font-size:1.3rem;">{{.Icon}}</span>
-                            <div>
-                                <div class="text-bold">{{.Name}}</div>
-                                <div class="text-muted text-sm">{{.Category}} • Updated {{.UpdatedAt}}</div>
-                            </div>
+                        <div>
+                            <div class="text-bold">{{.Name}}</div>
+                            <div class="text-muted text-sm">{{.Category}} · Updated {{formatDate .UpdatedAt}}</div>
                         </div>
-                        <div class="font-mono text-bold text-danger">-{{dispWhole .Value $.DisplayRate $.CurrencySymbol}}</div>
+                        <div class="font-mono text-bold text-danger nowrap">-{{dispWhole .Value $.DisplayRate $.CurrencySymbol}}</div>
                     </div>
                     <div class="goal-actions">
                         <form action="/networth/update" method="POST" class="contribute-form">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <input type="number" step="500" min="0" name="value" class="form-control form-control-sm" value="{{printf "%.0f" .Value}}">
-                            <button type="submit" class="btn btn-sm btn-secondary">Update ₹</button>
+                            <button type="submit" class="btn btn-sm btn-secondary">Update</button>
                         </form>
                         <form action="/networth/delete" method="POST" onsubmit="return confirm('Remove this liability?');">
                             <input type="hidden" name="id" value="{{.ID}}">
-                            <button type="submit" class="btn-icon-danger" title="Remove">&times;</button>
+                            <button type="submit" class="btn-icon-danger" title="Remove" aria-label="Remove">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                            </button>
                         </form>
                     </div>
                 </div>
                 {{else}}
-                <div class="text-muted py-4">Zero liabilities — debt-free! 🎉</div>
+                <div class="text-muted text-sm py-4">No liabilities recorded.</div>
                 {{end}}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Add Net Worth Modal -->
+<!-- Add Balance Sheet Modal -->
 <div class="modal-backdrop" id="addNetWorthModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>💎 Add Balance Sheet Item</h3>
+            <h3>Add Balance Sheet Account</h3>
             <button class="modal-close" onclick="closeAddNetWorthModal()">&times;</button>
         </div>
         <form action="/networth/add" method="POST">
+            <input type="hidden" name="icon" value="">
             <div class="modal-body">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Type</label>
                         <select name="kind" class="form-control">
-                            <option value="asset">Asset (+)</option>
-                            <option value="liability">Liability / Debt (-)</option>
+                            <option value="asset">Asset</option>
+                            <option value="liability">Liability / Debt</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -154,22 +154,18 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Account / Asset Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g. Groww Nifty 50 SIP" required>
+                        <label>Account name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. HDFC Savings or Nifty 50 SIP" required>
                     </div>
                     <div class="form-group">
-                        <label>Current Value (₹ INR)</label>
+                        <label>Current balance (₹ INR)</label>
                         <input type="number" step="100" min="0" name="value" class="form-control" placeholder="150000" required>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Emoji Icon</label>
-                    <input type="text" name="icon" class="form-control" value="🏦">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeAddNetWorthModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add to Balance Sheet</button>
+                <button type="submit" class="btn btn-primary">Save account</button>
             </div>
         </form>
     </div>

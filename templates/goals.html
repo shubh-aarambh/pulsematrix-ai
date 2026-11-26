@@ -3,19 +3,19 @@
     <!-- Top Summary KPIs -->
     <div class="metrics-row">
         <div class="card metric-card">
-            <span class="card-label">Category Budgets Allocated ({{.CurrencyCode}})</span>
+            <span class="card-label">Category budgets ({{.CurrencyCode}})</span>
             <div class="metric-value">{{dispWhole .TotalBudgeted .DisplayRate .CurrencySymbol}}</div>
-            <span class="text-muted">Spent this month: {{dispMoney .TotalBudgetSpent .DisplayRate .CurrencySymbol}}</span>
+            <span class="text-muted text-sm">Spent this month: {{dispMoney .TotalBudgetSpent .DisplayRate .CurrencySymbol}}</span>
         </div>
         <div class="card metric-card">
-            <span class="card-label">Budget Guard Status</span>
+            <span class="card-label">Budget status</span>
             <div class="metric-value {{if gt .OverBudgetCount 0}}text-danger{{else}}text-success{{end}}">
-                {{if gt .OverBudgetCount 0}}{{.OverBudgetCount}} Over Limit{{else}}All On Track{{end}}
+                {{if gt .OverBudgetCount 0}}{{.OverBudgetCount}} over limit{{else}}On track{{end}}
             </div>
-            <span class="text-muted">Live month-to-date envelope tracking</span>
+            <span class="text-muted text-sm">Month-to-date category tracking</span>
         </div>
-        <div class="card metric-card bg-gradient-emerald">
-            <span class="card-label">Savings Goals Funded ({{.CurrencyCode}})</span>
+        <div class="card metric-card">
+            <span class="card-label">Savings funded ({{.CurrencyCode}})</span>
             <div class="metric-value text-success">{{dispWhole .TotalGoalSaved .DisplayRate .CurrencySymbol}}</div>
             <div class="progress-container">
                 <div class="progress-bar-bg">
@@ -29,28 +29,30 @@
         </div>
     </div>
 
-    <!-- Savings Goals Section -->
+    <!-- Savings Goals -->
     <div class="card">
         <div class="card-header-flex">
             <div>
-                <h3>🎯 Personal Savings Goals &amp; Milestones</h3>
-                <p class="subtitle">Track emergency reserves, travel funds, hardware upgrades, or down payments</p>
+                <h3>Savings Goals</h3>
+                <p class="subtitle">Track emergency funds, travel, hardware, or long-term milestones</p>
             </div>
-            <button class="btn btn-primary" onclick="openAddGoalModal()">+ New Savings Goal</button>
+            <button type="button" class="btn btn-primary-sm" onclick="openAddGoalModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                <span>Create goal</span>
+            </button>
         </div>
 
         <div class="goals-grid">
             {{range .Goals}}
-            <div class="goal-card {{if eq .Status "completed"}}goal-completed{{end}}">
+            <div class="goal-card">
                 <div class="goal-card-top">
                     <div class="goal-title-wrap">
-                        <span class="goal-emoji">{{.Icon}}</span>
                         <div>
                             <div class="text-bold">{{.Name}}</div>
-                            <span class="text-muted text-sm">{{.Category}} • Target {{.TargetDate}}</span>
+                            <span class="text-muted text-sm">{{.Category}} · Target {{formatDate .TargetDate}}</span>
                         </div>
                     </div>
-                    <span class="badge {{if eq .Status "completed"}}badge-success{{else}}badge-primary{{end}}">{{if eq .Status "completed"}}Funded 🎉{{else}}{{.ProgressPct}}%{{end}}</span>
+                    <span class="badge {{if eq .Status "completed"}}badge-success{{else}}badge-primary{{end}}">{{if eq .Status "completed"}}Funded{{else}}{{.ProgressPct}}%{{end}}</span>
                 </div>
 
                 <div class="goal-amounts">
@@ -65,38 +67,40 @@
                 <div class="goal-actions">
                     <form action="/goals/contribute" method="POST" class="contribute-form">
                         <input type="hidden" name="id" value="{{.ID}}">
-                        <input type="number" step="500" min="1" name="amount" class="form-control form-control-sm" placeholder="+ Add ₹" required>
-                        <button type="submit" class="btn btn-sm btn-success">Contribute</button>
+                        <input type="number" step="500" min="1" name="amount" class="form-control form-control-sm" placeholder="Amount (₹)" required>
+                        <button type="submit" class="btn btn-sm btn-success">Deposit</button>
                     </form>
                     <form action="/goals/delete" method="POST" onsubmit="return confirm('Remove this savings goal?');">
                         <input type="hidden" name="id" value="{{.ID}}">
-                        <button type="submit" class="btn-icon-danger" title="Remove Goal">&times;</button>
+                        <button type="submit" class="btn-icon-danger" title="Remove goal" aria-label="Remove goal">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                        </button>
                     </form>
                 </div>
             </div>
             {{else}}
-            <div class="text-muted py-4">No savings goals yet. Click "+ New Savings Goal" to start building toward your next milestone!</div>
+            <div class="text-muted text-sm py-4">No savings goals yet. Create one to start tracking progress.</div>
             {{end}}
         </div>
     </div>
 
-    <!-- Category Budget Envelopes Section -->
+    <!-- Category Budget Envelopes -->
     <div class="card">
         <div class="card-header-flex">
             <div>
-                <h3>📊 Monthly Category Budget Envelopes</h3>
-                <p class="subtitle">Real-time month-to-date spend against each category ceiling (caps stored in base ₹ INR)</p>
+                <h3>Monthly Category Budgets</h3>
+                <p class="subtitle">Month-to-date spend against each category limit (stored in ₹ INR)</p>
             </div>
-            <button class="btn btn-secondary" onclick="openAddCategoryModal()">+ Custom Category</button>
+            <button type="button" class="btn btn-secondary-sm" onclick="openAddCategoryModal()">New category</button>
         </div>
 
         <div class="budgets-grid">
             {{range .Budgets}}
             <div class="budget-card">
-                <div class="card-header-flex" style="margin-bottom:0.6rem;">
-                    <span class="cat-pill" {{safeBorderStyle .Color}}>{{.Icon}} {{.Name}}</span>
+                <div class="card-header-flex" style="margin-bottom:0.2rem;">
+                    <span class="cat-pill" {{safeBorderStyle .Color}}>{{.Name}}</span>
                     <span class="badge {{if eq .Status "exceeded"}}badge-danger{{else if eq .Status "warning"}}badge-warning{{else if eq .Status "ok"}}badge-success{{else}}badge-ghost{{end}}">
-                        {{if eq .Status "exceeded"}}Over Budget{{else if eq .Status "warning"}}Near Limit{{else if eq .Status "ok"}}On Track{{else}}No Limit{{end}}
+                        {{if eq .Status "exceeded"}}Over limit{{else if eq .Status "warning"}}Near limit{{else if eq .Status "ok"}}On track{{else}}No limit{{end}}
                     </span>
                 </div>
 
@@ -112,7 +116,7 @@
                 <form action="/budgets/update" method="POST" class="budget-edit-row">
                     <input type="hidden" name="id" value="{{.ID}}">
                     <input type="number" step="500" min="0" name="monthly_limit" class="form-control form-control-sm" value="{{printf "%.0f" .MonthlyLimit}}" aria-label="Monthly Limit INR">
-                    <button type="submit" class="btn btn-sm btn-secondary">Update ₹ Cap</button>
+                    <button type="submit" class="btn btn-sm btn-secondary">Save limit</button>
                 </form>
             </div>
             {{end}}
@@ -120,45 +124,42 @@
     </div>
 </div>
 
-<!-- Add Savings Goal Modal -->
+<!-- Create Goal Modal -->
 <div class="modal-backdrop" id="addGoalModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>🎯 Create Savings Goal</h3>
+            <h3>Create Savings Goal</h3>
             <button class="modal-close" onclick="closeAddGoalModal()">&times;</button>
         </div>
         <form action="/goals/add" method="POST">
+            <input type="hidden" name="icon" value="">
             <div class="modal-body">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Goal Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g. Home Down Payment" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Icon Emoji</label>
-                        <input type="text" name="icon" class="form-control" value="🎯">
-                    </div>
-                    <div class="form-group">
-                        <label>Target Amount (₹ INR)</label>
-                        <input type="number" step="1000" min="1" name="target_amount" class="form-control" placeholder="250000" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Starting Saved (₹ INR)</label>
-                        <input type="number" step="500" min="0" name="current_amount" class="form-control" value="0">
+                        <label>Goal name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Emergency Fund" required>
                     </div>
                     <div class="form-group">
                         <label>Category</label>
                         <input type="text" name="category" class="form-control" placeholder="Safety Net / Travel / Tech" value="Savings">
                     </div>
                     <div class="form-group">
-                        <label>Target Date</label>
-                        <input type="date" name="target_date" class="form-control" value="{{.TodayISO}}">
+                        <label>Target amount (₹ INR)</label>
+                        <input type="number" step="1000" min="1" name="target_amount" class="form-control" placeholder="250000" required>
                     </div>
+                    <div class="form-group">
+                        <label>Already saved (₹ INR)</label>
+                        <input type="number" step="500" min="0" name="current_amount" class="form-control" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Target date</label>
+                    <input type="date" name="target_date" class="form-control" value="{{.TodayISO}}">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeAddGoalModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Create Goal</button>
+                <button type="submit" class="btn btn-primary">Create goal</button>
             </div>
         </form>
     </div>
@@ -168,19 +169,16 @@
 <div class="modal-backdrop" id="addCategoryModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>🏷️ Add Custom Category</h3>
+            <h3>New Category</h3>
             <button class="modal-close" onclick="closeAddCategoryModal()">&times;</button>
         </div>
         <form action="/categories/add" method="POST">
+            <input type="hidden" name="icon" value="">
             <div class="modal-body">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Category Name</label>
+                        <label>Category name</label>
                         <input type="text" name="name" class="form-control" placeholder="e.g. Health & Fitness" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Emoji Icon</label>
-                        <input type="text" name="icon" class="form-control" value="🏋️">
                     </div>
                     <div class="form-group">
                         <label>Type</label>
@@ -191,18 +189,18 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Monthly Budget Cap (₹)</label>
+                        <label>Monthly limit (₹)</label>
                         <input type="number" step="500" min="0" name="monthly_limit" class="form-control" value="5000">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Accent Color</label>
-                    <input type="color" name="color" class="form-control color-picker" value="#10b981">
+                    <div class="form-group">
+                        <label>Tag color</label>
+                        <input type="color" name="color" class="form-control color-picker" value="#3b82f6">
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeAddCategoryModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Category</button>
+                <button type="submit" class="btn btn-primary">Add category</button>
             </div>
         </form>
     </div>

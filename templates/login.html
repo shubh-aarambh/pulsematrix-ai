@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}}</title>
-    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
-    <link rel="apple-touch-icon" href="/static/img/logo.svg">
-    <meta name="theme-color" content="#04070a">
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg?v=7">
+    <link rel="apple-touch-icon" href="/static/img/logo.svg?v=7">
+    <meta name="theme-color" content="#09090b">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script>(function(){var t=localStorage.getItem('pm_theme');if(t)document.documentElement.setAttribute('data-theme',t==='light'?'frost':t);})();</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=7">
+    <script>(function(){var t=localStorage.getItem('pm_theme_v7');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
 </head>
 <body class="auth-body">
     <div class="auth-split">
@@ -19,52 +19,58 @@
         <section class="auth-showcase">
             <div class="showcase-top">
                 <div class="brand-logo">
-                    <img src="/static/img/logo.svg" alt="PulseMatrix AI Logo" class="brand-logo-img">
-                    <span class="brand-text">Pulse<span class="brand-accent">Matrix</span> AI</span>
+                    <img src="/static/img/logo.svg?v=7" alt="PulseMatrix" width="28" height="28" class="brand-logo-img">
+                    <span class="brand-text">PulseMatrix</span>
                 </div>
-                <span class="badge badge-primary">v6.0 • PERSONALIZED OS</span>
+                <span class="badge badge-ghost">Personal Finance</span>
             </div>
 
             <div class="showcase-hero">
-                <h1>Your Autonomous Personal Finance &amp; Wealth OS.</h1>
-                <p>Track expenses in ₹ INR with 1-click live FX conversion, parse UPI SMS &amp; receipts with AI, monitor Net Worth &amp; Split-Bills, track savings goals, and export executive PDF statements.</p>
+                <h1>Clarity for every rupee, subscription, and shared bill.</h1>
+                <p>Track spending in ₹ INR with live multi-currency conversion, parse UPI SMS and receipts automatically, manage budgets and net worth, and export clean monthly PDF statements.</p>
             </div>
 
             <div class="showcase-features">
                 <div class="showcase-feat">
-                    <span class="feat-icon">🤖</span>
+                    <span class="feat-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg>
+                    </span>
                     <div>
-                        <strong>AI Receipt &amp; UPI SMS Parser</strong>
-                        <span>Ingest Google Pay, PhonePe, Paytm &amp; bank alerts in real time</span>
+                        <strong>Receipt &amp; UPI SMS ingestion</strong>
+                        <span>Extract merchant, amount, and category from GPay, PhonePe, or bank alerts</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
-                    <span class="feat-icon">💎</span>
+                    <span class="feat-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+                    </span>
                     <div>
-                        <strong>Net Worth, Budgets, Goals &amp; Split-Bills</strong>
-                        <span>Assets vs liabilities balance sheet, category caps &amp; shared bill settlements</span>
+                        <strong>Net worth, goals &amp; shared bills</strong>
+                        <span>Assets and liabilities, category caps, savings targets, and IOU settlements</span>
                     </div>
                 </div>
                 <div class="showcase-feat">
-                    <span class="feat-icon">🔥</span>
+                    <span class="feat-icon-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    </span>
                     <div>
-                        <strong>30-Day Heatmap &amp; Smart Burn Forecast</strong>
-                        <span>Visual daily spend intensity, safe daily allowance &amp; anomaly radar</span>
+                        <strong>30-day activity &amp; burn forecast</strong>
+                        <span>Spot unusual charges, monitor daily spend pace, and plan month-end cashflow</span>
                     </div>
                 </div>
             </div>
 
             <div class="showcase-footer">
-                <span>Go 1.23 • SQLite WAL • Token-Bucket Security • Live FX Engine</span>
+                <span>Private ledger · Live FX conversion · CSV &amp; PDF export</span>
             </div>
         </section>
 
-        <!-- Clean User Sign In Panel (Zero Admin References) -->
+        <!-- User Sign In Panel -->
         <section class="auth-panel">
             <div class="auth-card">
                 <div class="auth-brand">
-                    <h2>Welcome Back</h2>
-                    <p class="auth-subtitle">Sign in to your personal financial command center</p>
+                    <h2>Sign in</h2>
+                    <p class="auth-subtitle">Access your personal financial workspace</p>
                 </div>
 
                 {{if .Error}}
@@ -76,8 +82,8 @@
 
                 <form action="/login" method="POST" class="auth-form">
                     <div class="form-group">
-                        <label>Username or Email</label>
-                        <input type="text" name="username" class="form-control" placeholder="username or you@example.com" required autofocus>
+                        <label>Username or email</label>
+                        <input type="text" name="username" class="form-control" placeholder="you@example.com" required autofocus>
                     </div>
 
                     <div class="form-group">
@@ -85,13 +91,13 @@
                         <input type="password" name="password" class="form-control" placeholder="••••••••••••" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block btn-lg">Sign In to Workspace &rarr;</button>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in</button>
                 </form>
 
                 {{if .AllowRegistration}}
                 <div class="auth-footer">
-                    <span>New to PulseMatrix?</span>
-                    <a href="/register" class="link-accent">Create Free Account</a>
+                    <span>New here?</span>
+                    <a href="/register" class="link-accent">Create an account</a>
                 </div>
                 {{else}}
                 <div class="auth-footer">

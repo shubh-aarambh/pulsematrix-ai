@@ -1,32 +1,35 @@
 {{define "content"}}
 <div class="page-container">
-    <!-- Top Summary Bento Row -->
+    <!-- Top Summary Row -->
     <div class="metrics-row">
         <div class="card metric-card">
-            <span class="card-label">You Are Owed ({{.CurrencyCode}})</span>
+            <span class="card-label">Owed to you ({{.CurrencyCode}})</span>
             <div class="metric-value text-success">{{dispMoney .OwedToMe .DisplayRate .CurrencySymbol}}</div>
-            <span class="text-muted">Pending receivables from friends &amp; teammates</span>
+            <span class="text-muted text-sm">Pending receivables from others</span>
         </div>
         <div class="card metric-card">
-            <span class="card-label">You Owe ({{.CurrencyCode}})</span>
+            <span class="card-label">You owe ({{.CurrencyCode}})</span>
             <div class="metric-value text-danger">{{dispMoney .IOwe .DisplayRate .CurrencySymbol}}</div>
-            <span class="text-muted">Pending payables to settle</span>
+            <span class="text-muted text-sm">Open balances to settle</span>
         </div>
-        <div class="card metric-card bg-gradient-emerald">
-            <span class="card-label">Net Shared Balance</span>
+        <div class="card metric-card">
+            <span class="card-label">Net shared balance</span>
             <div class="metric-value {{if ge .NetSplitBalance 0.0}}text-success{{else}}text-danger{{end}}">{{dispMoneySigned .NetSplitBalance .DisplayRate .CurrencySymbol}}</div>
-            <span class="text-muted">{{.PendingCount}} open shared expense(s)</span>
+            <span class="text-muted text-sm">{{.PendingCount}} open shared expense(s)</span>
         </div>
     </div>
 
-    <!-- Split Expenses Table -->
-    <div class="card">
-        <div class="card-header-flex">
+    <!-- Shared Expenses Table -->
+    <div class="card p-0">
+        <div class="card-header-flex" style="padding:1.15rem 1.25rem; margin-bottom:0; border-bottom:1px solid var(--border-subtle);">
             <div>
-                <h3>🤝 Shared Bills &amp; IOU Tracker</h3>
-                <p class="subtitle">Track trips, rent, dining &amp; office splits — settle with optional 1-click ledger sync</p>
+                <h3>Shared Bills &amp; IOUs</h3>
+                <p class="subtitle">Track trips, rent, dining, and group expenses with optional ledger sync</p>
             </div>
-            <button class="btn btn-primary" onclick="openAddSplitModal()">+ Add Split Bill</button>
+            <button type="button" class="btn btn-primary-sm" onclick="openAddSplitModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+                <span>Record split</span>
+            </button>
         </div>
 
         <div class="table-responsive">
@@ -37,51 +40,53 @@
                         <th>Description</th>
                         <th>Direction</th>
                         <th>Due Date</th>
-                        <th>Amount ({{.CurrencyCode}})</th>
+                        <th style="text-align:right;">Amount ({{.CurrencyCode}})</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th style="text-align:right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{range .Splits}}
                     <tr>
-                        <td class="text-bold">{{.PersonName}}</td>
+                        <td class="text-bold nowrap">{{.PersonName}}</td>
                         <td>{{.Description}}</td>
                         <td>
                             {{if eq .Direction "owed_to_me"}}
-                            <span class="badge badge-success">Owes You</span>
+                            <span class="badge badge-success">Owes you</span>
                             {{else}}
-                            <span class="badge badge-warning">You Owe</span>
+                            <span class="badge badge-warning">You owe</span>
                             {{end}}
                         </td>
-                        <td class="font-mono text-muted">{{.DueDate}}</td>
-                        <td class="font-mono text-bold">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
+                        <td class="font-mono text-muted nowrap">{{formatDate .DueDate}}</td>
+                        <td class="font-mono text-bold nowrap" style="text-align:right;">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
                         <td>
-                            <span class="badge {{if eq .Status "settled"}}badge-ghost{{else}}badge-cyan{{end}}">{{.Status}}</span>
+                            <span class="badge {{if eq .Status "settled"}}badge-ghost{{else}}badge-primary{{end}}">{{.Status}}</span>
                         </td>
-                        <td>
+                        <td style="text-align:right;">
                             <div class="inline-actions">
                                 {{if eq .Status "pending"}}
                                 <form action="/splits/settle" method="POST" style="display:inline;">
                                     <input type="hidden" name="id" value="{{.ID}}">
                                     <input type="hidden" name="log_ledger" value="1">
-                                    <button type="submit" class="btn btn-sm btn-success" title="Mark settled and record in Transactions">✓ Settle + Log</button>
+                                    <button type="submit" class="btn btn-sm btn-success" title="Mark settled and record in Transactions">Settle &amp; log</button>
                                 </form>
                                 <form action="/splits/settle" method="POST" style="display:inline;">
                                     <input type="hidden" name="id" value="{{.ID}}">
                                     <button type="submit" class="btn btn-sm btn-secondary">Settle</button>
                                 </form>
                                 {{end}}
-                                <form action="/splits/delete" method="POST" style="display:inline;" onsubmit="return confirm('Delete split entry?');">
+                                <form action="/splits/delete" method="POST" style="display:inline;" onsubmit="return confirm('Delete this shared expense?');">
                                     <input type="hidden" name="id" value="{{.ID}}">
-                                    <button type="submit" class="btn-icon-danger" title="Remove">&times;</button>
+                                    <button type="submit" class="btn-icon-danger" title="Remove" aria-label="Remove">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                                    </button>
                                 </form>
                             </div>
                         </td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">No split bills recorded yet. Click "+ Add Split Bill" to start tracking shared expenses.</td>
+                        <td colspan="7" class="text-center py-4 text-muted">No shared expenses recorded yet.</td>
                     </tr>
                     {{end}}
                 </tbody>
@@ -90,25 +95,25 @@
     </div>
 </div>
 
-<!-- Add Split Modal -->
+<!-- Record Split Modal -->
 <div class="modal-backdrop" id="addSplitModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>🤝 Record Shared Expense</h3>
+            <h3>Record Shared Expense</h3>
             <button class="modal-close" onclick="closeAddSplitModal()">&times;</button>
         </div>
         <form action="/splits/add" method="POST">
             <div class="modal-body">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Person / Friend Name</label>
+                        <label>Person</label>
                         <input type="text" name="person_name" class="form-control" placeholder="e.g. Aarav Mehta" required>
                     </div>
                     <div class="form-group">
                         <label>Direction</label>
                         <select name="direction" class="form-control">
-                            <option value="owed_to_me">They Owe Me (+)</option>
-                            <option value="i_owe">I Owe Them (-)</option>
+                            <option value="owed_to_me">They owe me</option>
+                            <option value="i_owe">I owe them</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -126,17 +131,17 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Expense Description</label>
+                    <label>Description</label>
                     <input type="text" name="description" class="form-control" placeholder="e.g. Goa Trip Airbnb Split" required>
                 </div>
                 <div class="form-group">
-                    <label>Expected Settlement Date</label>
+                    <label>Target settlement date</label>
                     <input type="date" name="due_date" class="form-control" value="{{.TodayISO}}">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeAddSplitModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Split</button>
+                <button type="submit" class="btn btn-primary">Save split</button>
             </div>
         </form>
     </div>

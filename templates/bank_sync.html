@@ -1,42 +1,41 @@
 {{define "content"}}
 <div class="bank-sync-container">
     <!-- Webhook Integration Card -->
-    <div class="card bg-gradient-dark">
+    <div class="card">
         <div class="card-header-flex">
             <div>
-                <h2>Payment Apps & Banking Integration Hub</h2>
-                <p class="subtitle">Direct integration support for Google Pay, PhonePe, Paytm, Apple Pay, PayPal, Stripe, and Automated SMS Listeners</p>
+                <h2>Payment Apps &amp; Webhook Integrations</h2>
+                <p class="subtitle">Connect Google Pay, PhonePe, Paytm, Apple Pay, or automated SMS forwarders</p>
             </div>
-            <span class="badge badge-success">Ingestion Engine Ready</span>
+            <span class="badge badge-success">Ready</span>
         </div>
 
         <div class="form-grid mt-3">
             <div class="webhook-endpoint-box">
-                <label>1. Payment App API Webhook Endpoint:</label>
+                <label>Payment webhook endpoint</label>
                 <div class="code-copy-row">
                     <code id="paymentWebhookCode">POST /api/webhooks/payment</code>
-                    <button class="btn btn-sm btn-secondary" onclick="copyEndpointUrl('/api/webhooks/payment', this)">Copy URL</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="copyEndpointUrl('/api/webhooks/payment', this)">Copy URL</button>
                 </div>
             </div>
             <div class="webhook-endpoint-box">
-                <label>2. Automated SMS / Notification Auto-Forwarder Endpoint:</label>
+                <label>SMS auto-forwarder endpoint</label>
                 <div class="code-copy-row">
                     <code id="smsIngestCode">POST /api/v1/ingest/sms</code>
-                    <button class="btn btn-sm btn-secondary" onclick="copyEndpointUrl('/api/v1/ingest/sms', this)">Copy URL</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="copyEndpointUrl('/api/v1/ingest/sms', this)">Copy URL</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Payment App Live Simulator Grid -->
-    <div class="charts-row mt-4">
-        <!-- Simulator 1: Direct Payment App API (Google Pay, PhonePe, Apple Pay) -->
+    <!-- Simulators -->
+    <div class="charts-row">
         <div class="card flex-1">
-            <h3>📱 Simulate Payment App Transaction (Google Pay / PhonePe / Apple Pay)</h3>
-            <p class="text-muted text-sm">Sends structured transaction payload as fired by mobile payment gateways.</p>
+            <h3>Test Payment Webhook</h3>
+            <p class="subtitle">Send a sample structured payload from a UPI or card payment app.</p>
 
             <div class="form-group mt-3">
-                <label>Payment App Source</label>
+                <label>Payment app</label>
                 <select id="payAppSource" class="form-control">
                     <option value="Google Pay">Google Pay</option>
                     <option value="PhonePe">PhonePe</option>
@@ -46,7 +45,7 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Merchant / Receiver</label>
+                <label>Merchant</label>
                 <input type="text" id="payAppMerchant" class="form-control" value="Swiggy Food Delivery">
             </div>
             <div class="form-grid">
@@ -64,54 +63,53 @@
                 </div>
             </div>
 
-            <button class="btn btn-primary btn-block mt-3" onclick="triggerPaymentAppSimulator()">🚀 Ingest Payment App Transaction</button>
+            <button type="button" class="btn btn-primary btn-block mt-3" onclick="triggerPaymentAppSimulator()">Send test payload</button>
             <div id="payAppResultBox" class="ai-preview-box mt-3 hidden"></div>
         </div>
 
-        <!-- Simulator 2: SMS & Notification Auto-Parser -->
         <div class="card flex-1">
-            <h3>💬 Simulate Incoming Bank / Payment App SMS Alert</h3>
-            <p class="text-muted text-sm">Feeds raw transaction SMS text into Gemini AI / Regex parser.</p>
+            <h3>Test Bank SMS Parser</h3>
+            <p class="subtitle">Parse an incoming payment SMS alert directly into your ledger.</p>
 
             <div class="form-group mt-3">
-                <label>Sample Payment Alert SMS Text</label>
+                <label>Sample SMS alert</label>
                 <textarea id="smsText" class="form-control" rows="4">Paid Rs 450.00 to Starbucks Coffee via Google Pay UPI on 25-Sep-2026 ref 9981273</textarea>
             </div>
             <div class="form-group">
-                <label>Sender App / Bank Code</label>
+                <label>Sender</label>
                 <input type="text" id="smsSender" class="form-control" value="Google Pay / HDFC Bank">
             </div>
 
-            <button class="btn btn-primary btn-block mt-3" onclick="triggerSMSSimulator()">⚡ Process SMS via AI Parser</button>
+            <button type="button" class="btn btn-primary btn-block mt-3" onclick="triggerSMSSimulator()">Parse &amp; ingest SMS</button>
             <div id="smsResultBox" class="ai-preview-box mt-3 hidden"></div>
         </div>
     </div>
 
-    <!-- Recent Audit Logs -->
-    <div class="card mt-4">
-        <div class="card-header-flex">
-            <h3>Audit Logs & Ingestion History</h3>
-            <button class="btn btn-sm btn-secondary" onclick="window.location.reload()">Refresh Logs</button>
+    <!-- Ingestion Logs -->
+    <div class="card p-0">
+        <div class="card-header-flex" style="padding:1.15rem 1.25rem; margin-bottom:0; border-bottom:1px solid var(--border-subtle);">
+            <h3>Ingestion History</h3>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="window.location.reload()">Refresh</button>
         </div>
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>Timestamp</th>
-                        <th>Action</th>
-                        <th>Payload Details</th>
+                        <th>Event</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
                 <tbody id="auditLogsBody">
                     {{range .Logs}}
                     <tr>
-                        <td><span class="font-mono text-muted">{{.CreatedAt}}</span></td>
+                        <td class="nowrap"><span class="font-mono text-muted text-sm">{{formatDateTime .CreatedAt}}</span></td>
                         <td><span class="badge badge-primary">{{.Action}}</span></td>
                         <td><span class="font-mono text-sm">{{.Details}}</span></td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="3" class="text-center py-4 text-muted">No webhook activity logged yet. Fire a test payload above!</td>
+                        <td colspan="3" class="text-center py-4 text-muted">No webhook events recorded yet.</td>
                     </tr>
                     {{end}}
                 </tbody>
@@ -133,8 +131,8 @@ function copyEndpointUrl(path, btn) {
     const fullUrl = window.location.origin + path;
     navigator.clipboard.writeText(fullUrl).then(() => {
         const orig = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = orig; }, 1800);
+        btn.textContent = 'Copied';
+        setTimeout(() => { btn.textContent = orig; }, 1600);
     });
 }
 
@@ -161,7 +159,7 @@ async function triggerPaymentAppSimulator() {
 
     const resBox = document.getElementById('payAppResultBox');
     resBox.classList.remove('hidden');
-    resBox.textContent = 'Ingesting payment app webhook...';
+    resBox.textContent = 'Sending payload…';
 
     try {
         const res = await fetch('/api/webhooks/payment', {
@@ -170,7 +168,7 @@ async function triggerPaymentAppSimulator() {
             body: JSON.stringify(payload)
         });
         const data = await res.json();
-        resBox.innerHTML = `<strong>Response (${res.status}):</strong><br><pre class="font-mono text-sm">${escapeResultHtml(JSON.stringify(data, null, 2))}</pre>`;
+        resBox.innerHTML = `<strong>Response (${res.status})</strong><br><pre class="font-mono text-sm" style="margin-top:0.35rem; overflow-x:auto;">${escapeResultHtml(JSON.stringify(data, null, 2))}</pre>`;
     } catch(err) {
         resBox.innerHTML = `<span class="text-danger">Error: ${escapeResultHtml(err.message)}</span>`;
     }
@@ -182,7 +180,7 @@ async function triggerSMSSimulator() {
 
     const resBox = document.getElementById('smsResultBox');
     resBox.classList.remove('hidden');
-    resBox.textContent = 'Processing SMS notification with AI parser...';
+    resBox.textContent = 'Parsing SMS…';
 
     try {
         const res = await fetch('/api/v1/ingest/sms', {
@@ -191,7 +189,7 @@ async function triggerSMSSimulator() {
             body: JSON.stringify({ sms: sms, sender: sender })
         });
         const data = await res.json();
-        resBox.innerHTML = `<strong>Response (${res.status}):</strong><br><pre class="font-mono text-sm">${escapeResultHtml(JSON.stringify(data, null, 2))}</pre>`;
+        resBox.innerHTML = `<strong>Response (${res.status})</strong><br><pre class="font-mono text-sm" style="margin-top:0.35rem; overflow-x:auto;">${escapeResultHtml(JSON.stringify(data, null, 2))}</pre>`;
     } catch(err) {
         resBox.innerHTML = `<span class="text-danger">Error: ${escapeResultHtml(err.message)}</span>`;
     }

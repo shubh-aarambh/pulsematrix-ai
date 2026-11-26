@@ -2,39 +2,40 @@
 <div class="ai-chat-layout card">
     <div class="chat-header">
         <div class="chat-title">
-            <span class="chat-icon">🤖</span>
+            <span class="chat-icon-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </span>
             <div>
-                <h3>PulseMatrix AI Financial Strategist</h3>
-                <span class="chat-subtitle">Context Aware • Connected to Live Ledger State & Gemini 1.5 LLM</span>
+                <h3>Financial Advisor</h3>
+                <span class="chat-subtitle">Connected to your live ledger, categories, and subscriptions</span>
             </div>
         </div>
         <div class="health-chip">
-            Health Score: <strong>{{.Health.Score}}/100</strong>
+            Health score: <strong class="font-mono">{{.Health.Score}}/100</strong>
         </div>
     </div>
 
     <div class="chat-body" id="chatMessages">
         <div class="chat-bubble assistant">
-            <div class="avatar">🤖</div>
+            <div class="avatar">PM</div>
             <div class="bubble-content">
-                Hello! I am your <strong>PulseMatrix AI Strategist</strong>. I have real-time visibility into your income, category spend breakdown, and active recurring subscriptions.<br><br>
-                How can I assist you today? You can try asking one of the suggested prompts below:
+                Ask anything about your spending, recurring subscriptions, savings rate, or monthly forecast. Pick a question below or type your own.
             </div>
         </div>
     </div>
 
     <!-- Suggested Prompts Row -->
     <div class="suggested-prompts">
-        <button class="prompt-chip" onclick="sendQuickPrompt('How can I optimize my subscriptions to save money?')">💡 Optimize Subscriptions</button>
-        <button class="prompt-chip" onclick="sendQuickPrompt('Analyze my food & dining spend this month')">🍜 Audit Food & Dining</button>
-        <button class="prompt-chip" onclick="sendQuickPrompt('Summarize my top financial risks and health score')">📈 Financial Health Audit</button>
-        <button class="prompt-chip" onclick="sendQuickPrompt('What is my projected end of month spend velocity?')">📊 End of Month Forecast</button>
+        <button type="button" class="prompt-chip" onclick="sendQuickPrompt('How can I optimize my subscriptions to save money?')">Optimize subscriptions</button>
+        <button type="button" class="prompt-chip" onclick="sendQuickPrompt('Analyze my food & dining spend this month')">Audit food &amp; dining</button>
+        <button type="button" class="prompt-chip" onclick="sendQuickPrompt('Summarize my top financial risks and health score')">Financial health review</button>
+        <button type="button" class="prompt-chip" onclick="sendQuickPrompt('What is my projected end of month spend velocity?')">End-of-month forecast</button>
     </div>
 
-    <!-- Chat Input Form -->
+    <!-- Chat Input -->
     <div class="chat-input-area">
-        <input type="text" id="chatInput" class="form-control" placeholder="Ask AI Advisor anything about your portfolio or spend..." onkeypress="if(event.key === 'Enter') sendAIChatMessage()">
-        <button class="btn btn-primary" onclick="sendAIChatMessage()">Send Prompt &rarr;</button>
+        <input type="text" id="chatInput" class="form-control" placeholder="Ask a question about your finances…" onkeypress="if(event.key === 'Enter') sendAIChatMessage()">
+        <button type="button" class="btn btn-primary" onclick="sendAIChatMessage()">Send</button>
     </div>
 </div>
 {{end}}

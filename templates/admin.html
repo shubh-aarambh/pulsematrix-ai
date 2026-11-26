@@ -1,53 +1,53 @@
 {{define "content"}}
 <div class="admin-console-container">
-    <!-- Owner Header Banner -->
+    <!-- Owner Header -->
     <div class="card bg-gradient-admin">
-        <div class="card-header-flex" style="margin-bottom:0.4rem;">
+        <div class="card-header-flex" style="margin-bottom:0;">
             <div>
-                <div class="admin-shield-pill">🛡️ EXCLUSIVE OWNER CONTROL PLANE</div>
-                <h2 style="margin-top:0.45rem;">PulseMatrix Operations, Governance &amp; Runtime Telemetry</h2>
-                <p class="subtitle">Private owner-only view — completely invisible to standard users.</p>
+                <div class="admin-shield-pill">Owner Control Plane</div>
+                <h2 style="margin-top:0.5rem;">Operations, Governance &amp; Runtime Telemetry</h2>
+                <p class="subtitle">Private owner view — hidden from standard user accounts.</p>
             </div>
             <div class="action-buttons">
                 <form action="/admin/worker/trigger" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-secondary-sm">⚡ Run Worker Sweep</button>
+                    <button type="submit" class="btn btn-secondary-sm">Run worker sweep</button>
                 </form>
-                <a href="/admin/metrics" target="_blank" class="btn btn-secondary-sm">JSON Metrics</a>
+                <a href="/admin/metrics" target="_blank" class="btn btn-secondary-sm">JSON metrics</a>
                 <a href="/admin/metrics/prometheus" target="_blank" class="btn btn-secondary-sm">Prometheus</a>
-                <button class="btn btn-admin" onclick="openCreateUserModal()">+ Provision User</button>
+                <button type="button" class="btn btn-admin btn-sm" style="height:34px; padding:0 0.85rem;" onclick="openCreateUserModal()">Add user</button>
             </div>
         </div>
     </div>
 
-    <!-- Live Go Backend Systems Telemetry Panel -->
+    <!-- Go Backend Telemetry -->
     <div class="card">
         <div class="card-header-flex">
             <div>
-                <h3>📡 Live Go Runtime &amp; Backend Systems Telemetry</h3>
-                <p class="subtitle">Real-time observability: token-bucket throttling, p95 HTTP latency, memory heap &amp; background worker pool</p>
+                <h3>Runtime &amp; Backend Telemetry</h3>
+                <p class="subtitle">Token-bucket rate limiting, p95 latency, heap allocation, and background workers</p>
             </div>
             <span class="badge badge-success">Uptime: {{.Telemetry.UptimeHuman}}</span>
         </div>
         <div class="radar-stats-grid">
             <div class="radar-stat-box">
-                <span class="stat-title">HTTP Throughput</span>
-                <span class="stat-number text-accent">{{.Telemetry.TotalRequests}}</span>
-                <span class="stat-desc">5xx Errors: {{.Telemetry.ErrorRequests}} • 429 Throttled: {{.Telemetry.RateLimited}}</span>
+                <span class="stat-title">HTTP requests</span>
+                <span class="stat-number">{{.Telemetry.TotalRequests}}</span>
+                <span class="stat-desc">5xx: {{.Telemetry.ErrorRequests}} · 429 throttled: {{.Telemetry.RateLimited}}</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Latency (Avg / p95)</span>
-                <span class="stat-number text-cyan">{{printf "%.1f" .Telemetry.P95LatencyMs}}ms</span>
-                <span class="stat-desc">Avg: {{printf "%.2f" .Telemetry.AvgLatencyMs}}ms (rolling window)</span>
+                <span class="stat-title">Latency (p95)</span>
+                <span class="stat-number">{{printf "%.1f" .Telemetry.P95LatencyMs}}ms</span>
+                <span class="stat-desc">Avg: {{printf "%.2f" .Telemetry.AvgLatencyMs}}ms</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Go Runtime Health</span>
+                <span class="stat-title">Go heap</span>
                 <span class="stat-number text-success">{{printf "%.1f" .Telemetry.HeapAllocMB}} MB</span>
-                <span class="stat-desc">{{.Telemetry.Goroutines}} Goroutines • {{.Telemetry.NumGC}} GC Cycles</span>
+                <span class="stat-desc">{{.Telemetry.Goroutines}} goroutines · {{.Telemetry.NumGC}} GC cycles</span>
             </div>
             <div class="radar-stat-box">
-                <span class="stat-title">Async Workers &amp; Hooks</span>
-                <span class="stat-number text-warning">{{.Telemetry.WorkerRuns}} Runs</span>
-                <span class="stat-desc">{{.Telemetry.WebhooksIngest}} Webhooks • {{.Telemetry.AnomaliesTagged}} Auto-Flagged</span>
+                <span class="stat-title">Worker runs</span>
+                <span class="stat-number text-warning">{{.Telemetry.WorkerRuns}}</span>
+                <span class="stat-desc">{{.Telemetry.WebhooksIngest}} webhooks · {{.Telemetry.AnomaliesTagged}} flagged</span>
             </div>
         </div>
     </div>
@@ -55,63 +55,61 @@
     <!-- Platform Business KPIs -->
     <div class="metrics-row">
         <div class="card metric-card">
-            <div class="card-header-flex">
-                <span class="card-label">Registered Accounts</span>
-                <span class="badge badge-warning">1 Owner</span>
+            <div class="card-header-flex" style="margin-bottom:0;">
+                <span class="card-label" style="margin-bottom:0;">Accounts</span>
+                <span class="badge badge-warning">1 owner</span>
             </div>
             <div class="metric-value">{{.Stats.TotalUsers}}</div>
             <div class="progress-labels">
-                <span class="text-success">{{.Stats.ActiveUsers}} Active</span>
-                <span class="{{if gt .Stats.SuspendedUsers 0}}text-danger{{else}}text-muted{{end}}">{{.Stats.SuspendedUsers}} Suspended</span>
+                <span class="text-success">{{.Stats.ActiveUsers}} active</span>
+                <span class="{{if gt .Stats.SuspendedUsers 0}}text-danger{{else}}text-muted{{end}}">{{.Stats.SuspendedUsers}} suspended</span>
             </div>
         </div>
 
         <div class="card metric-card">
-            <div class="card-header-flex">
-                <span class="card-label">Platform Ledger Volume</span>
-                <span class="badge badge-success">{{.CurrencyCode}}</span>
+            <div class="card-header-flex" style="margin-bottom:0;">
+                <span class="card-label" style="margin-bottom:0;">Ledger volume</span>
+                <span class="badge badge-ghost">{{.CurrencyCode}}</span>
             </div>
             <div class="metric-value">{{dispWhole .Stats.TotalVolumeUSD .DisplayRate .CurrencySymbol}}</div>
             <div class="progress-labels">
-                <span>{{.Stats.TotalTransactions}} Total Entries</span>
-                <span>{{.Stats.TotalGoals}} Savings Goals</span>
+                <span>{{.Stats.TotalTransactions}} transactions</span>
+                <span>{{.Stats.TotalGoals}} goals</span>
             </div>
         </div>
 
         <div class="card metric-card">
-            <div class="card-header-flex">
-                <span class="card-label">Flagged Anomalies</span>
-                <span class="badge badge-warning">Risk Radar</span>
+            <div class="card-header-flex" style="margin-bottom:0;">
+                <span class="card-label" style="margin-bottom:0;">Flagged anomalies</span>
+                <span class="badge badge-warning">Risk</span>
             </div>
             <div class="metric-value text-warning">{{.Stats.TotalAnomalies}}</div>
             <div class="progress-labels">
                 <span>Threshold: {{dispWhole .Settings.AnomalyThreshold .DisplayRate .CurrencySymbol}}</span>
-                <span>Cross-tenant alerts</span>
             </div>
         </div>
 
         <div class="card metric-card">
-            <div class="card-header-flex">
-                <span class="card-label">Recurring Services</span>
-                <span class="badge badge-cyan">SaaS Engine</span>
+            <div class="card-header-flex" style="margin-bottom:0;">
+                <span class="card-label" style="margin-bottom:0;">Active subscriptions</span>
+                <span class="badge badge-success">Healthy</span>
             </div>
             <div class="metric-value">{{.Stats.ActiveSubs}}</div>
             <div class="progress-labels">
-                <span>Active Subscriptions</span>
-                <span class="text-success">System Healthy</span>
+                <span>Tracked across accounts</span>
             </div>
         </div>
     </div>
 
     <!-- User Directory -->
-    <div class="card">
-        <div class="card-header-flex">
+    <div class="card p-0">
+        <div class="card-header-flex" style="padding:1.15rem 1.25rem; margin-bottom:0; border-bottom:1px solid var(--border-subtle);">
             <div>
-                <h3>User Directory &amp; Account Lifecycle</h3>
-                <p class="subtitle">Suspend compromised accounts, provision users, or inspect ledger volume (Owner-only admin lock enforced).</p>
+                <h3>User Directory</h3>
+                <p class="subtitle">Manage user status, provision accounts, and review activity</p>
             </div>
             <form action="/admin" method="GET" class="admin-filter-row">
-                <input type="text" name="q" class="form-control" placeholder="Search username or email..." value="{{.Search}}">
+                <input type="text" name="q" class="form-control form-control-sm" style="min-width:210px;" placeholder="Search username or email…" value="{{.Search}}">
                 <button type="submit" class="btn btn-secondary-sm">Search</button>
             </form>
         </div>
@@ -123,9 +121,9 @@
                         <th>User</th>
                         <th>Role</th>
                         <th>Status</th>
-                        <th>Ledger Activity ({{.CurrencyCode}})</th>
+                        <th style="text-align:right;">Volume ({{.CurrencyCode}})</th>
                         <th>Last Login</th>
-                        <th>Owner Actions</th>
+                        <th style="text-align:right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -133,39 +131,41 @@
                     <tr>
                         <td>
                             <div class="vendor-cell">
-                                <span class="text-bold">{{.Username}}{{if eq .ID $.AdminID}} <span class="badge badge-warning">OWNER</span>{{end}}</span>
-                                <span class="text-muted text-sm">{{.Email}} • {{.PreferredCurrency}} • Joined {{.CreatedAt}}</span>
+                                <span class="text-bold">{{.Username}}{{if eq .ID $.AdminID}} <span class="badge badge-warning">Owner</span>{{end}}</span>
+                                <span class="text-muted text-sm">{{.Email}} · {{.PreferredCurrency}} · Joined {{formatDate .CreatedAt}}</span>
                             </div>
                         </td>
-                        <td><span class="badge {{if eq .Role "admin"}}badge-warning{{else}}badge-primary{{end}}">{{if eq .Role "admin"}}OWNER{{else}}USER{{end}}</span></td>
+                        <td><span class="badge {{if eq .Role "admin"}}badge-warning{{else}}badge-ghost{{end}}">{{if eq .Role "admin"}}Owner{{else}}User{{end}}</span></td>
                         <td><span class="badge {{if eq .Status "active"}}badge-success{{else}}badge-danger{{end}}">{{.Status}}</span></td>
-                        <td>
-                            <div class="vendor-cell">
+                        <td class="nowrap" style="text-align:right;">
+                            <div class="vendor-cell" style="align-items:flex-end;">
                                 <span class="font-mono text-bold">{{dispWhole .TotalSpend $.DisplayRate $.CurrencySymbol}}</span>
-                                <span class="text-muted text-sm">{{.TxCount}} txns • {{.SubCount}} subs</span>
+                                <span class="text-muted text-sm">{{.TxCount}} txns · {{.SubCount}} subs</span>
                             </div>
                         </td>
-                        <td><span class="font-mono text-muted text-sm">{{if .LastLoginAt}}{{.LastLoginAt}}{{else}}Never{{end}}</span></td>
-                        <td>
+                        <td class="nowrap"><span class="font-mono text-muted text-sm">{{if .LastLoginAt}}{{formatDateTime .LastLoginAt}}{{else}}Never{{end}}</span></td>
+                        <td style="text-align:right;">
                             {{if ne .ID $.AdminID}}
                             <div class="inline-actions">
                                 <form action="/admin/users/toggle-status" method="POST" style="display:inline;">
                                     <input type="hidden" name="id" value="{{.ID}}">
                                     <button type="submit" class="btn btn-sm {{if eq .Status "active"}}btn-outline-danger{{else}}btn-success{{end}}">{{if eq .Status "active"}}Suspend{{else}}Activate{{end}}</button>
                                 </form>
-                                <form action="/admin/users/delete" method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete user {{.Username}} and all their data?');">
+                                <form action="/admin/users/delete" method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete user {{.Username}}?');">
                                     <input type="hidden" name="id" value="{{.ID}}">
-                                    <button type="submit" class="btn-icon-danger" title="Delete User">&times;</button>
+                                    <button type="submit" class="btn-icon-danger" title="Delete user" aria-label="Delete user">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                                    </button>
                                 </form>
                             </div>
                             {{else}}
-                            <span class="text-muted text-sm">Protected Owner</span>
+                            <span class="text-muted text-sm">Protected</span>
                             {{end}}
                         </td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">No users match your search filter.</td>
+                        <td colspan="6" class="text-center py-4 text-muted">No users found.</td>
                     </tr>
                     {{end}}
                 </tbody>
@@ -173,45 +173,45 @@
         </div>
     </div>
 
-    <!-- Global Controls + Anomalies Row -->
+    <!-- Global Controls + Anomalies -->
     <div class="charts-row">
         <div class="card flex-1">
             <div class="card-header-flex">
                 <div>
-                    <h3>⚙️ Global Platform Controls</h3>
-                    <p class="subtitle">Applied immediately across all active user workspaces</p>
+                    <h3>Platform Controls</h3>
+                    <p class="subtitle">Applied immediately across all user workspaces</p>
                 </div>
             </div>
             <form action="/admin/settings" method="POST">
                 <div class="form-group">
-                    <label>Global Announcement Banner (leave blank to hide)</label>
-                    <input type="text" name="announcement_banner" class="form-control" placeholder="e.g. Live Split-Bills, Net Worth & PDF Statements now live!" value="{{.Settings.AnnouncementBanner}}">
+                    <label>Announcement banner (leave blank to hide)</label>
+                    <input type="text" name="announcement_banner" class="form-control" placeholder="Optional notice for all signed-in users" value="{{.Settings.AnnouncementBanner}}">
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Anomaly Alert Threshold (₹ INR Base)</label>
+                        <label>Anomaly threshold (₹ INR)</label>
                         <input type="number" step="500" min="50" name="anomaly_threshold" class="form-control" value="{{printf "%.0f" .Settings.AnomalyThreshold}}">
                     </div>
                     <div class="form-group">
-                        <label>Default New User Budget (₹ INR Base)</label>
+                        <label>Default user budget (₹ INR)</label>
                         <input type="number" step="1000" min="100" name="default_budget_goal" class="form-control" value="{{printf "%.0f" .Settings.DefaultBudgetGoal}}">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="checkbox-row">
                         <input type="checkbox" name="allow_registration" value="true" {{if .Settings.AllowRegistration}}checked{{end}}>
-                        <span>Allow public user self-registration on <code>/register</code></span>
+                        <span>Allow public self-registration on <code>/register</code></span>
                     </label>
                 </div>
-                <button type="submit" class="btn btn-admin btn-block">Save Global Controls</button>
+                <button type="submit" class="btn btn-admin btn-block">Save controls</button>
             </form>
         </div>
 
-        <div class="card flex-1">
-            <div class="card-header-flex">
+        <div class="card flex-1 p-0">
+            <div class="card-header-flex" style="padding:1.15rem 1.25rem; margin-bottom:0; border-bottom:1px solid var(--border-subtle);">
                 <div>
-                    <h3>🚨 Platform-Wide Risk &amp; Anomaly Feed</h3>
-                    <p class="subtitle">Latest flagged high-value or duplicate charges across users</p>
+                    <h3>Flagged Transactions</h3>
+                    <p class="subtitle">Recent high-value or duplicate charges across users</p>
                 </div>
             </div>
             <div class="table-responsive">
@@ -219,8 +219,8 @@
                     <thead>
                         <tr>
                             <th>User</th>
-                            <th>Vendor</th>
-                            <th>Amount</th>
+                            <th>Merchant</th>
+                            <th style="text-align:right;">Amount</th>
                             <th>Reason</th>
                         </tr>
                     </thead>
@@ -229,12 +229,12 @@
                         <tr class="table-row-warning">
                             <td><span class="badge badge-ghost">{{.Username}}</span></td>
                             <td class="text-bold">{{.Vendor}}</td>
-                            <td class="font-mono">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
+                            <td class="font-mono nowrap" style="text-align:right;">{{dispMoney .Amount $.DisplayRate $.CurrencySymbol}}</td>
                             <td class="text-sm text-muted">{{.Reason}}</td>
                         </tr>
                         {{else}}
                         <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">No active anomalies across the platform.</td>
+                            <td colspan="4" class="text-center py-4 text-muted">No active anomalies.</td>
                         </tr>
                         {{end}}
                     </tbody>
@@ -243,12 +243,12 @@
         </div>
     </div>
 
-    <!-- Platform Audit Logs -->
-    <div class="card">
-        <div class="card-header-flex">
+    <!-- Audit Logs -->
+    <div class="card p-0">
+        <div class="card-header-flex" style="padding:1.15rem 1.25rem; margin-bottom:0; border-bottom:1px solid var(--border-subtle);">
             <div>
-                <h3>📜 Global Security &amp; Ingestion Audit Log</h3>
-                <p class="subtitle">Last 20 administrative, authentication, CSV import, and webhook events</p>
+                <h3>Security &amp; Ingestion Audit Log</h3>
+                <p class="subtitle">Latest 20 administrative, auth, CSV import, and webhook events</p>
             </div>
         </div>
         <div class="table-responsive">
@@ -264,14 +264,14 @@
                 <tbody>
                     {{range .AuditLogs}}
                     <tr>
-                        <td class="font-mono text-muted text-sm">{{.CreatedAt}}</td>
+                        <td class="font-mono text-muted text-sm nowrap">{{formatDateTime .CreatedAt}}</td>
                         <td><span class="badge badge-ghost">{{.Username}}</span></td>
                         <td><span class="badge badge-primary">{{.Action}}</span></td>
                         <td class="font-mono text-sm">{{.Details}}</td>
                     </tr>
                     {{else}}
                     <tr>
-                        <td colspan="4" class="text-center py-4 text-muted">No audit entries logged yet.</td>
+                        <td colspan="4" class="text-center py-4 text-muted">No audit events recorded yet.</td>
                     </tr>
                     {{end}}
                 </tbody>
@@ -280,31 +280,31 @@
     </div>
 </div>
 
-<!-- Provision Standard User Modal -->
+<!-- Provision User Modal -->
 <div class="modal-backdrop" id="createUserModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>👤 Provision User Account</h3>
+            <h3>Add User Account</h3>
             <button class="modal-close" onclick="closeCreateUserModal()">&times;</button>
         </div>
         <form action="/admin/users/create" method="POST">
             <div class="modal-body">
                 <div class="form-group">
                     <label>Username</label>
-                    <input type="text" name="username" class="form-control" placeholder="e.g. aarav_user" required>
+                    <input type="text" name="username" class="form-control" placeholder="e.g. aarav" required>
                 </div>
                 <div class="form-group">
-                    <label>Email Address</label>
+                    <label>Email address</label>
                     <input type="email" name="email" class="form-control" placeholder="user@example.com" required>
                 </div>
                 <div class="form-group">
-                    <label>Temporary Password (min 6 chars)</label>
+                    <label>Temporary password (min 6 chars)</label>
                     <input type="password" name="password" minlength="6" class="form-control" required>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeCreateUserModal()">Cancel</button>
-                <button type="submit" class="btn btn-admin">Provision User</button>
+                <button type="submit" class="btn btn-admin">Create user</button>
             </div>
         </form>
     </div>

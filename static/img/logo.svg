@@ -1,37 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <linearGradient id="pmBg" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#071318"/>
-      <stop offset="55%" stop-color="#0a1f24"/>
-      <stop offset="100%" stop-color="#050b10"/>
-    </linearGradient>
-    <linearGradient id="pmStroke" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#00f5a0"/>
-      <stop offset="55%" stop-color="#00d9f5"/>
-      <stop offset="100%" stop-color="#10b981"/>
-    </linearGradient>
-    <linearGradient id="pmPulse" x1="12" y1="32" x2="52" y2="32" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#00f5a0"/>
-      <stop offset="50%" stop-color="#00d9f5"/>
-      <stop offset="100%" stop-color="#f59e0b"/>
-    </linearGradient>
-    <filter id="pmGlow" x="-25%" y="-25%" width="150%" height="150%">
-      <feGaussianBlur stdDeviation="2.2" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  <!-- Squircle Matrix Container -->
-  <rect x="3" y="3" width="58" height="58" rx="16" fill="url(#pmBg)" stroke="url(#pmStroke)" stroke-width="2.5"/>
-  <!-- Subtle Internal Matrix Crosshair Grid -->
-  <path d="M22 10V54M42 10V54M10 22H54M10 42H54" stroke="#00f5a0" stroke-opacity="0.14" stroke-width="1"/>
-  <!-- Geometric Prism Frame -->
-  <polygon points="32,11 50,21.5 50,42.5 32,53 14,42.5 14,21.5" stroke="url(#pmStroke)" stroke-opacity="0.45" stroke-width="1.6" fill="#00f5a0" fill-opacity="0.06"/>
-  <!-- Glowing Financial Pulse Matrix Wave -->
-  <path d="M13 35H21.5L26 22L32.5 43L38 26.5L42.5 35H51" stroke="url(#pmPulse)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#pmGlow)"/>
-  <!-- Peak Node Dot -->
-  <circle cx="26" cy="22" r="2.6" fill="#00f5a0"/>
-  <circle cx="38" cy="26.5" r="2.6" fill="#00d9f5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <rect x="1" y="1" width="30" height="30" rx="8" fill="#111216" stroke="#27272A" stroke-width="1.5"/>
+  <path d="M6.5 18H11L13.75 10.5L17.5 22L20.5 14.5L22.5 18H25.5" stroke="#FAFAFA" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="13.75" cy="10.5" r="2" fill="#3B82F6"/>
 </svg>
