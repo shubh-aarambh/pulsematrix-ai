@@ -1,4 +1,13 @@
 {{define "content"}}
+<!-- Personalized Time-of-Day Greeting Banner -->
+<div class="greeting-strip">
+    <div>
+        <div class="greeting-headline" id="personalGreetingText">Welcome back, {{.Username}}</div>
+        <div class="greeting-motto" id="personalMottoText">Your autonomous wealth &amp; cashflow telemetry is synced in real time.</div>
+    </div>
+    <button type="button" class="quick-chip" onclick="openStudioDrawer()">🎨 Personalize Theme &amp; Grid</button>
+</div>
+
 <div class="bento-grid">
     <!-- ROW 1: Hero Wealth Balance (5) + Health Gauge (3) + Monthly Burn Target (4) -->
     <div class="card bento-hero bento-span-5">

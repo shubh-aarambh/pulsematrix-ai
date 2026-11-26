@@ -1,7 +1,9 @@
-// PulseMatrix AI v4.0 — Emerald Carbon Bento Grid Controller
+// PulseMatrix AI v6.0 — Personalized Matrix Bento Wealth OS Controller
 
 document.addEventListener('DOMContentLoaded', () => {
-    syncThemeIcon();
+    syncStudioControls();
+    initPersonalGreeting();
+    initCursorSpotlight();
     initCharts();
     initModalUX();
     initAutoDismissToasts();
@@ -10,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let currentAIParsed = null;
 let fxRatesCache = null;
+const chartInstances = [];
 
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -25,62 +28,159 @@ function getCurrencyMeta() {
     return window.__PM_CURRENCY || { code: 'INR', symbol: '₹', rate: 1 };
 }
 
-function syncThemeIcon() {
-    const icon = document.getElementById('themeIcon');
-    if (!icon) return;
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    icon.textContent = isLight ? '🌙' : '☀️';
+function cssVar(name, fallback) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
 
-window.toggleTheme = function() {
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    if (isLight) {
-        document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('pm_theme', 'dark');
-    } else {
-        document.documentElement.setAttribute('data-theme', 'light');
-        localStorage.setItem('pm_theme', 'light');
-    }
-    syncThemeIcon();
+// ============================================================================
+// Personalization Studio (6 Themes • 4 Matrix Patterns • 3 Glows • Motto)
+// ============================================================================
+
+window.openStudioDrawer = function() {
+    document.getElementById('studioBackdrop')?.classList.add('open');
+    document.getElementById('studioDrawer')?.classList.add('open');
+    syncStudioControls();
 };
 
-function submitCurrencySwap(code) {
+window.closeStudioDrawer = function() {
+    document.getElementById('studioBackdrop')?.classList.remove('open');
+    document.getElementById('studioDrawer')?.classList.remove('open');
+};
+
+window.setThemePalette = function(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('pm_theme', theme);
+    syncStudioControls();
+    rebuildChartsForTheme();
+};
+
+window.setMatrixPattern = function(pattern) {
+    document.documentElement.setAttribute('data-grid', pattern);
+    localStorage.setItem('pm_grid', pattern);
+    syncStudioControls();
+};
+
+window.setGlowLevel = function(glow) {
+    document.documentElement.setAttribute('data-glow', glow);
+    localStorage.setItem('pm_glow', glow);
+    syncStudioControls();
+};
+
+window.setDensityMode = function(density) {
+    document.documentElement.setAttribute('data-density', density);
+    localStorage.setItem('pm_density', density);
+    syncStudioControls();
+};
+
+window.savePersonalMotto = function(text) {
+    localStorage.setItem('pm_motto', text);
+    initPersonalGreeting();
+};
+
+window.resetStudioDefaults = function() {
+    localStorage.removeItem('pm_theme');
+    localStorage.removeItem('pm_grid');
+    localStorage.removeItem('pm_glow');
+    localStorage.removeItem('pm_density');
+    localStorage.removeItem('pm_motto');
+    document.documentElement.setAttribute('data-theme', 'cyber');
+    document.documentElement.setAttribute('data-grid', 'blueprint');
+    document.documentElement.setAttribute('data-glow', 'vibrant');
+    document.documentElement.setAttribute('data-density', 'comfortable');
+    syncStudioControls();
+    initPersonalGreeting();
+    rebuildChartsForTheme();
+};
+
+function syncStudioControls() {
+    const theme = document.documentElement.getAttribute('data-theme') || 'cyber';
+    const grid = document.documentElement.getAttribute('data-grid') || 'blueprint';
+    const glow = document.documentElement.getAttribute('data-glow') || 'vibrant';
+    const density = document.documentElement.getAttribute('data-density') || 'comfortable';
+
+    document.querySelectorAll('[data-set-theme]').forEach(el => {
+        el.classList.toggle('active', el.dataset.setTheme === theme);
+    });
+    document.querySelectorAll('[data-set-grid]').forEach(el => {
+        el.classList.toggle('active', el.dataset.setGrid === grid);
+    });
+    document.querySelectorAll('[data-set-glow]').forEach(el => {
+        el.classList.toggle('active', el.dataset.setGlow === glow);
+    });
+    document.querySelectorAll('[data-set-density]').forEach(el => {
+        el.classList.toggle('active', el.dataset.setDensity === density);
+    });
+
+    const mottoInput = document.getElementById('studioMottoInput');
+    if (mottoInput && mottoInput !== document.activeElement) {
+        mottoInput.value = localStorage.getItem('pm_motto') || '';
+    }
+}
+
+function initPersonalGreeting() {
+    const greetEl = document.getElementById('personalGreetingText');
+    const mottoEl = document.getElementById('personalMottoText');
+    const user = window.__PM_USER || 'Member';
+    if (greetEl) {
+        const h = new Date().getHours();
+        const salutation = h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
+        greetEl.textContent = `${salutation}, ${user}`;
+    }
+    if (mottoEl) {
+        const savedMotto = (localStorage.getItem('pm_motto') || '').trim();
+        mottoEl.textContent = savedMotto || 'Your autonomous wealth & cashflow telemetry is synced in real time.';
+    }
+}
+
+// Smooth Mouse-Tracking Spotlight Glow on Bento Cards
+function initCursorSpotlight() {
+    document.querySelectorAll('.card').forEach((card) => {
+        card.addEventListener('pointermove', (e) => {
+            const rect = card.getBoundingClientRect();
+            card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+            card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+        });
+    });
+}
+
+function switchCurrencyQuick(code) {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/settings/currency';
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.name = 'currency';
-    inp.value = code;
-    form.appendChild(inp);
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'currency';
+    input.value = code;
+    form.appendChild(input);
     document.body.appendChild(form);
     form.submit();
 }
 
+// Command Palette (Ctrl+K / Cmd+K)
 function getCommands() {
     const cmds = [
-        { label: 'Go to Command Center (Bento Dashboard)', hint: 'Home', icon: '⚡', action: () => window.location.href = '/' },
+        { label: 'Studio: Personalize Theme, Matrix Grid & Glow', hint: 'Colors', icon: '🎨', action: () => { closeCommandPalette(); openStudioDrawer(); } },
+        { label: 'Go to Command Center', hint: 'Bento Dashboard', icon: '📊', action: () => window.location.href = '/' },
         { label: 'Go to Transactions Ledger', hint: 'Edit & CSV', icon: '💳', action: () => window.location.href = '/transactions' },
         { label: 'Go to Budgets & Savings Goals', hint: 'Envelopes', icon: '🎯', action: () => window.location.href = '/goals' },
         { label: 'Go to Split-Bills & Shared Ledger', hint: 'IOUs', icon: '🤝', action: () => window.location.href = '/splits' },
         { label: 'Go to Net Worth & Balance Sheet', hint: 'Assets/Debt', icon: '💎', action: () => window.location.href = '/networth' },
         { label: 'Go to Monthly Statement (PDF)', hint: 'Print', icon: '📄', action: () => window.location.href = '/report' },
-        { label: 'Go to Analytics & 30D Heatmap', hint: 'Radar', icon: '📈', action: () => window.location.href = '/analytics' },
-        { label: 'Go to Subscriptions Radar', hint: 'Recurring', icon: '🔄', action: () => window.location.href = '/subscriptions' },
-        { label: 'Go to AI Financial Strategist', hint: 'Chat', icon: '🤖', action: () => window.location.href = '/ai-advisor' },
+        { label: 'Go to Analytics & Risk Radar', hint: 'Heatmap', icon: '📈', action: () => window.location.href = '/analytics' },
+        { label: 'Go to Subscriptions Radar', hint: 'AutoPay', icon: '🔄', action: () => window.location.href = '/subscriptions' },
+        { label: 'Go to AI Intelligence Strategist', hint: 'Chat', icon: '🤖', action: () => window.location.href = '/ai-advisor' },
         { label: 'Go to UPI & Webhook Integrations', hint: 'SMS Sync', icon: '📱', action: () => window.location.href = '/bank-sync' },
-        { label: 'Currency: Switch Display to INR (₹)', hint: 'Live FX', icon: '🇮🇳', action: () => submitCurrencySwap('INR') },
-        { label: 'Currency: Switch Display to USD ($)', hint: 'Live FX', icon: '🇺🇸', action: () => submitCurrencySwap('USD') },
-        { label: 'Currency: Switch Display to EUR (€)', hint: 'Live FX', icon: '🇪🇺', action: () => submitCurrencySwap('EUR') },
-        { label: 'Currency: Switch Display to GBP (£)', hint: 'Live FX', icon: '🇬🇧', action: () => submitCurrencySwap('GBP') },
+        { label: 'Currency: Switch Display to INR (₹)', hint: 'Default', icon: '🇮🇳', action: () => switchCurrencyQuick('INR') },
+        { label: 'Currency: Switch Display to USD ($)', hint: 'Live FX', icon: '🇺🇸', action: () => switchCurrencyQuick('USD') },
+        { label: 'Currency: Switch Display to EUR (€)', hint: 'Live FX', icon: '🇪🇺', action: () => switchCurrencyQuick('EUR') },
+        { label: 'Currency: Switch Display to GBP (£)', hint: 'Live FX', icon: '🇬🇧', action: () => switchCurrencyQuick('GBP') },
         { label: 'Action: Add New Transaction', hint: 'Modal', icon: '➕', action: () => { closeCommandPalette(); openAddTxModal(); } },
-        { label: 'Action: Scan Receipt / UPI SMS with AI', hint: 'Parser', icon: '📷', action: () => { closeCommandPalette(); openReceiptModal(); } },
-        { label: 'Action: Open Live FX Calculator', hint: 'Rates', icon: '💱', action: () => { closeCommandPalette(); openFXModal(); } },
-        { label: 'Action: Toggle Dark / Light Blueprint Grid', hint: 'Theme', icon: '🌗', action: () => { closeCommandPalette(); toggleTheme(); } },
+        { label: 'Action: Scan Receipt / UPI SMS with AI', hint: 'NLP', icon: '📷', action: () => { closeCommandPalette(); openReceiptModal(); } },
+        { label: 'Action: Open Live FX Calculator', hint: 'Convert', icon: '💱', action: () => { closeCommandPalette(); openFXModal(); } },
         { label: 'Action: Export Full Ledger CSV', hint: 'Download', icon: '📥', action: () => window.location.href = '/transactions/export/csv' },
     ];
     if (window.__PM_IS_ADMIN) {
-        cmds.unshift({ label: 'Go to Platform Admin Console', hint: 'RBAC & Ops', icon: '🛡️', action: () => window.location.href = '/admin' });
+        cmds.unshift({ label: 'Go to Owner Control Plane', hint: 'Telemetry', icon: '🛡️', action: () => window.location.href = '/admin' });
     }
     return cmds;
 }
@@ -133,7 +233,7 @@ function initKeyboardShortcuts() {
     });
 }
 
-// Live FX Calculator Modal
+// Live Multi-Currency FX Converter
 window.openFXModal = async function() {
     const modal = document.getElementById('fxConverterModal');
     if (!modal) return;
@@ -185,6 +285,7 @@ window.computeFXConversion = function() {
     metaEl.textContent = `Live Rate: 1 ${from} = ${rate.toFixed(4)} ${to}`;
 };
 
+// Edit Transaction & CSV Import Modals
 window.openEditTxModal = function(btn) {
     const modal = document.getElementById('editTxModal');
     if (!modal || !btn) return;
@@ -224,8 +325,8 @@ function initModalUX() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal-backdrop').forEach((m) => { m.style.display = 'none'; });
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar) sidebar.classList.remove('open');
+            closeStudioDrawer();
+            document.querySelector('.sidebar')?.classList.remove('open');
         }
     });
 }
@@ -238,8 +339,7 @@ function initAutoDismissToasts() {
 }
 
 window.toggleMobileSidebar = function() {
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar) sidebar.classList.toggle('open');
+    document.querySelector('.sidebar')?.classList.toggle('open');
 };
 
 window.openReceiptModal = function() {
@@ -250,12 +350,9 @@ window.openReceiptModal = function() {
 window.closeReceiptModal = function() {
     const modal = document.getElementById('aiReceiptModal');
     if (modal) modal.style.display = 'none';
-    const preview = document.getElementById('aiParsePreview');
-    const btnConfirm = document.getElementById('btnConfirmAI');
-    const btnRun = document.getElementById('btnRunAI');
-    if (preview) preview.classList.add('hidden');
-    if (btnConfirm) btnConfirm.classList.add('hidden');
-    if (btnRun) btnRun.classList.remove('hidden');
+    document.getElementById('aiParsePreview')?.classList.add('hidden');
+    document.getElementById('btnConfirmAI')?.classList.add('hidden');
+    document.getElementById('btnRunAI')?.classList.remove('hidden');
 };
 
 window.openAddTxModal = function() {
@@ -273,12 +370,10 @@ window.toggleSettingsModal = function() {
     if (modal) modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
 };
 
+// AI Receipt Parser
 window.runAIReceiptParser = async function() {
     const rawText = document.getElementById('aiRawText').value.trim();
-    if (!rawText) {
-        alert('Please enter or paste receipt text.');
-        return;
-    }
+    if (!rawText) { alert('Please enter or paste receipt text.'); return; }
 
     const btnRun = document.getElementById('btnRunAI');
     const previewBox = document.getElementById('aiParsePreview');
@@ -292,18 +387,18 @@ window.runAIReceiptParser = async function() {
             body: JSON.stringify({ text: rawText })
         });
         if (!resp.ok) throw new Error(`Parser Error HTTP ${resp.status}`);
-
         const data = await resp.json();
         currentAIParsed = data;
+
         const confPct = ((Number(data.confidenceScore) || 0.85) * 100).toFixed(0);
         const amtNum = Number(data.amount) || 0;
 
         previewBox.classList.remove('hidden');
         previewBox.innerHTML = `
-            <div style="font-weight:700; color:#00e5a0; margin-bottom:0.4rem;">Parsed Receipt Data (Confidence: ${escapeHtml(confPct)}%)</div>
+            <div style="font-weight:700; color:var(--accent-primary); margin-bottom:0.4rem;">Parsed Receipt Data (Confidence: ${escapeHtml(confPct)}%)</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.86rem;">
                 <div><strong>Merchant:</strong> ${escapeHtml(data.vendor)}</div>
-                <div><strong>Amount:</strong> <span style="color:#22d3ee; font-weight:700;">${escapeHtml(amtNum.toFixed(2))} ${escapeHtml(data.currency)}</span></div>
+                <div><strong>Amount:</strong> <span style="color:var(--accent-secondary); font-weight:700;">${escapeHtml(amtNum.toFixed(2))} ${escapeHtml(data.currency)}</span></div>
                 <div><strong>Category:</strong> ${escapeHtml(data.suggestedCategory)}</div>
                 <div><strong>Date:</strong> ${escapeHtml(data.date)}</div>
             </div>
@@ -322,7 +417,6 @@ window.runAIReceiptParser = async function() {
 
 window.confirmAITransaction = async function() {
     if (!currentAIParsed) return;
-
     const formData = new URLSearchParams();
     formData.append('vendor', currentAIParsed.vendor || 'Merchant');
     formData.append('amount', currentAIParsed.amount || 0);
@@ -339,16 +433,14 @@ window.confirmAITransaction = async function() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData.toString()
         });
-        if (resp.ok) {
-            window.location.href = '/transactions?success=Transaction+saved+to+ledger';
-        } else {
-            alert('Failed to save transaction');
-        }
+        if (resp.ok) window.location.href = '/transactions?success=Transaction+saved+to+ledger';
+        else alert('Failed to save transaction');
     } catch (err) {
         alert('Error saving transaction: ' + err.message);
     }
 };
 
+// AI Advisor Chat
 window.sendAIChatMessage = async function() {
     const input = document.getElementById('chatInput');
     const query = input.value.trim();
@@ -356,7 +448,7 @@ window.sendAIChatMessage = async function() {
 
     appendChatMessage('user', query);
     input.value = '';
-    const typingId = appendChatMessage('assistant', 'Analyzing financial model with AI...');
+    const typingId = appendChatMessage('assistant', 'Analyzing financial telemetry...');
 
     try {
         const resp = await fetch('/api/ai/advisor', {
@@ -367,11 +459,8 @@ window.sendAIChatMessage = async function() {
         const data = await resp.json();
         const msgDiv = document.getElementById(typingId);
         if (msgDiv) {
-            if (!resp.ok) {
-                msgDiv.querySelector('.bubble-content').textContent = data.error || 'Advisor request failed';
-            } else {
-                msgDiv.querySelector('.bubble-content').innerHTML = formatMarkdownAdvice(data.reply);
-            }
+            if (!resp.ok) msgDiv.querySelector('.bubble-content').textContent = data.error || 'Advisor request failed';
+            else msgDiv.querySelector('.bubble-content').innerHTML = formatMarkdownAdvice(data.reply);
         }
     } catch (err) {
         const msgDiv = document.getElementById(typingId);
@@ -381,16 +470,12 @@ window.sendAIChatMessage = async function() {
 
 window.sendQuickPrompt = function(promptText) {
     const input = document.getElementById('chatInput');
-    if (input) {
-        input.value = promptText;
-        window.sendAIChatMessage();
-    }
+    if (input) { input.value = promptText; window.sendAIChatMessage(); }
 };
 
 function appendChatMessage(role, text) {
     const chatBody = document.getElementById('chatMessages');
     if (!chatBody) return '';
-
     const id = 'msg_' + Math.random().toString(36).slice(2, 11);
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble ${role}`;
@@ -429,166 +514,188 @@ function showEmptyChartState(canvas, message) {
     canvas.parentElement.appendChild(note);
 }
 
-// Emerald / Cyan / Gold Fintech Chart Initialization
+// Live Theme-Aware Chart.js Engine
+let cachedTrends = null;
+let cachedCategories = null;
+
+function rebuildChartsForTheme() {
+    while (chartInstances.length > 0) {
+        const ch = chartInstances.pop();
+        try { ch.destroy(); } catch (_) {}
+    }
+    if (cachedTrends !== null || cachedCategories !== null) {
+        renderAllCharts(cachedTrends || [], cachedCategories || []);
+    }
+}
+
 async function initCharts() {
     const trendCtx = document.getElementById('monthlyTrendChart');
     const doughnutCtx = document.getElementById('categoryDoughnutChart');
     const velCtx = document.getElementById('analyticsVelocityChart');
     const catCtx = document.getElementById('analyticsCategoryChart');
-
     if (!trendCtx && !doughnutCtx && !velCtx && !catCtx) return;
 
-    const { symbol } = getCurrencyMeta();
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    try {
+        const [resTrends, resCats] = await Promise.all([
+            fetch('/api/reports/monthly'),
+            fetch('/api/reports/categories')
+        ]);
+        const tData = resTrends.ok ? await resTrends.json() : [];
+        const cData = resCats.ok ? await resCats.json() : [];
+        cachedTrends = Array.isArray(tData) ? tData : [];
+        cachedCategories = Array.isArray(cData) ? cData : [];
+        renderAllCharts(cachedTrends, cachedCategories);
+    } catch (err) {
+        console.error('Failed to initialize charts:', err);
+    }
+}
+
+function renderAllCharts(trends, categories) {
+    const trendCtx = document.getElementById('monthlyTrendChart');
+    const doughnutCtx = document.getElementById('categoryDoughnutChart');
+    const velCtx = document.getElementById('analyticsVelocityChart');
+    const catCtx = document.getElementById('analyticsCategoryChart');
+
+    const curr = getCurrencyMeta();
+    const sym = curr.symbol || '₹';
+    const primary = cssVar('--accent-primary', '#00f5a0');
+    const primaryRGB = cssVar('--accent-primary-rgb', '0, 245, 160');
+    const secondary = cssVar('--accent-secondary', '#00d9f5');
+    const secondaryRGB = cssVar('--accent-secondary-rgb', '0, 217, 245');
+    const isLight = document.documentElement.getAttribute('data-theme') === 'frost';
+
     const tickColor = isLight ? '#475569' : '#64748b';
     const legendColor = isLight ? '#334155' : '#94a3b8';
-    const gridColor = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(16, 185, 129, 0.06)';
-    const doughnutBorder = isLight ? '#ffffff' : '#0d1319';
+    const gridColor = isLight ? 'rgba(15, 23, 42, 0.06)' : `rgba(${primaryRGB}, 0.08)`;
+    const doughnutBorder = cssVar('--bg-card-solid', '#0b1219');
 
-    try {
-        const resTrends = await fetch('/api/reports/monthly');
-        const trendsData = resTrends.ok ? await resTrends.json() : [];
-        const trends = Array.isArray(trendsData) ? trendsData : [];
+    const themePalette = [primary, secondary, '#f59e0b', '#fb7185', '#14b8a6', '#38bdf8', '#eab308', '#22c55e', '#64748b'];
 
-        const resCats = await fetch('/api/reports/categories');
-        const catsData = resCats.ok ? await resCats.json() : [];
-        const categories = Array.isArray(catsData) ? catsData : [];
-
-        // Zero purple — Emerald, Cyan, Gold, Teal, Coral, Sky, Lime
-        const fintechPalette = ['#00e5a0', '#06b6d4', '#f59e0b', '#14b8a6', '#fb7185', '#0ea5e9', '#22c55e', '#eab308', '#64748b'];
-
-        if (trendCtx) {
-            if (trends.length > 0) {
-                new Chart(trendCtx, {
-                    type: 'line',
-                    data: {
-                        labels: trends.map(t => t.month),
-                        datasets: [
-                            {
-                                label: `Income (${symbol})`,
-                                data: trends.map(t => t.income),
-                                borderColor: '#00e5a0',
-                                backgroundColor: 'rgba(0, 229, 160, 0.12)',
-                                borderWidth: 2.5,
-                                pointBackgroundColor: '#00e5a0',
-                                pointRadius: 3.5,
-                                tension: 0.35,
-                                fill: true
-                            },
-                            {
-                                label: `Expenses (${symbol})`,
-                                data: trends.map(t => t.expense),
-                                borderColor: '#06b6d4',
-                                backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                                borderWidth: 2.5,
-                                pointBackgroundColor: '#06b6d4',
-                                pointRadius: 3.5,
-                                tension: 0.35,
-                                fill: true
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: { color: legendColor, font: { family: 'JetBrains Mono', size: 11 } } }
+    if (trendCtx) {
+        if (trends.length > 0) {
+            chartInstances.push(new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: trends.map(t => t.month),
+                    datasets: [
+                        {
+                            label: `Income (${sym})`,
+                            data: trends.map(t => t.income),
+                            borderColor: primary,
+                            backgroundColor: `rgba(${primaryRGB}, 0.14)`,
+                            borderWidth: 2.6,
+                            pointBackgroundColor: primary,
+                            pointRadius: 4,
+                            tension: 0.36,
+                            fill: true
                         },
-                        scales: {
-                            x: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 } }, grid: { color: gridColor } },
-                            y: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => symbol + Number(v).toLocaleString() }, grid: { color: gridColor } }
+                        {
+                            label: `Expenses (${sym})`,
+                            data: trends.map(t => t.expense),
+                            borderColor: secondary,
+                            backgroundColor: `rgba(${secondaryRGB}, 0.11)`,
+                            borderWidth: 2.6,
+                            pointBackgroundColor: secondary,
+                            pointRadius: 4,
+                            tension: 0.36,
+                            fill: true
                         }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: legendColor, font: { family: 'JetBrains Mono', size: 11 } } } },
+                    scales: {
+                        x: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 } }, grid: { color: gridColor } },
+                        y: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => sym + Number(v).toLocaleString() }, grid: { color: gridColor } }
                     }
-                });
-            } else {
-                showEmptyChartState(trendCtx, 'No monthly transaction trend data yet.');
-            }
+                }
+            }));
+        } else {
+            showEmptyChartState(trendCtx, 'No monthly transaction trend data yet.');
         }
+    }
 
-        if (doughnutCtx) {
-            if (categories.length > 0) {
-                new Chart(doughnutCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: categories.map(c => c.name),
-                        datasets: [{
-                            data: categories.map(c => c.amount),
-                            backgroundColor: categories.map((c, i) => fintechPalette[i % fintechPalette.length]),
-                            borderWidth: 2,
-                            borderColor: doughnutBorder
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '64%',
-                        plugins: {
-                            legend: { position: 'bottom', labels: { color: legendColor, font: { family: 'Inter', size: 11 } } }
-                        }
-                    }
-                });
-            } else {
-                showEmptyChartState(doughnutCtx, 'Add expense transactions to see category allocation.');
-            }
+    if (doughnutCtx) {
+        if (categories.length > 0) {
+            chartInstances.push(new Chart(doughnutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categories.map(c => c.name),
+                    datasets: [{
+                        data: categories.map(c => c.amount),
+                        backgroundColor: categories.map((_, i) => themePalette[i % themePalette.length]),
+                        borderWidth: 2,
+                        borderColor: doughnutBorder
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { color: legendColor, font: { family: 'Inter', size: 11 } } } }
+                }
+            }));
+        } else {
+            showEmptyChartState(doughnutCtx, 'Add expense transactions to see category allocation.');
         }
+    }
 
-        if (velCtx) {
-            if (trends.length > 0) {
-                new Chart(velCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: trends.map(t => t.month),
-                        datasets: [{
-                            label: `Net Surplus (${symbol})`,
-                            data: trends.map(t => t.savings),
-                            backgroundColor: trends.map(t => t.savings >= 0 ? 'rgba(0, 229, 160, 0.8)' : 'rgba(244, 63, 94, 0.82)'),
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 } }, grid: { color: gridColor } },
-                            y: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => symbol + Number(v).toLocaleString() }, grid: { color: gridColor } }
-                        }
+    if (velCtx) {
+        if (trends.length > 0) {
+            chartInstances.push(new Chart(velCtx, {
+                type: 'bar',
+                data: {
+                    labels: trends.map(t => t.month),
+                    datasets: [{
+                        label: `Net Surplus (${sym})`,
+                        data: trends.map(t => t.savings),
+                        backgroundColor: trends.map(t => t.savings >= 0 ? `rgba(${primaryRGB}, 0.85)` : 'rgba(251, 113, 133, 0.85)'),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 } }, grid: { color: gridColor } },
+                        y: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => sym + Number(v).toLocaleString() }, grid: { color: gridColor } }
                     }
-                });
-            } else {
-                showEmptyChartState(velCtx, 'No velocity data available yet.');
-            }
+                }
+            }));
+        } else {
+            showEmptyChartState(velCtx, 'No velocity data available yet.');
         }
+    }
 
-        if (catCtx) {
-            if (categories.length > 0) {
-                new Chart(catCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: categories.map(c => c.name),
-                        datasets: [{
-                            label: `Spend (${symbol})`,
-                            data: categories.map(c => c.amount),
-                            backgroundColor: categories.map((c, i) => fintechPalette[i % fintechPalette.length]),
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => symbol + Number(v).toLocaleString() }, grid: { color: gridColor } },
-                            y: { ticks: { color: tickColor, font: { family: 'Inter', size: 11 } }, grid: { color: gridColor } }
-                        }
+    if (catCtx) {
+        if (categories.length > 0) {
+            chartInstances.push(new Chart(catCtx, {
+                type: 'bar',
+                data: {
+                    labels: categories.map(c => c.name),
+                    datasets: [{
+                        label: `Spend (${sym})`,
+                        data: categories.map(c => c.amount),
+                        backgroundColor: categories.map((_, i) => themePalette[i % themePalette.length]),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 }, callback: (v) => sym + Number(v).toLocaleString() }, grid: { color: gridColor } },
+                        y: { ticks: { color: tickColor }, grid: { color: gridColor } }
                     }
-                });
-            } else {
-                showEmptyChartState(catCtx, 'No category spend breakdown yet.');
-            }
+                }
+            }));
+        } else {
+            showEmptyChartState(catCtx, 'No category spend breakdown yet.');
         }
-    } catch (err) {
-        console.error('Failed to initialize Bento charts:', err);
     }
 }

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}} - PulseMatrix AI</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
+    <link rel="apple-touch-icon" href="/static/img/logo.svg">
+    <meta name="theme-color" content="#04070a">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,8 +14,16 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <script>
         (function() {
-            var t = localStorage.getItem('pm_theme');
-            if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+            var r = document.documentElement;
+            var t = localStorage.getItem('pm_theme') || 'cyber';
+            var g = localStorage.getItem('pm_grid') || 'blueprint';
+            var gl = localStorage.getItem('pm_glow') || 'vibrant';
+            var d = localStorage.getItem('pm_density') || 'comfortable';
+            if (t === 'light') t = 'frost';
+            r.setAttribute('data-theme', t);
+            r.setAttribute('data-grid', g);
+            r.setAttribute('data-glow', gl);
+            r.setAttribute('data-density', d);
         })();
     </script>
 </head>
@@ -22,12 +33,10 @@
         <aside class="sidebar">
             <div class="brand">
                 <a href="/" class="brand-logo">
-                    <div class="logo-mark">
-                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                    </div>
+                    <img src="/static/img/logo.svg" alt="PulseMatrix AI Logo" class="brand-logo-img">
                     <span class="brand-text">Pulse<span class="brand-accent">Matrix</span></span>
                 </a>
-                <div class="brand-badge">v5.0</div>
+                <div class="brand-badge">v6.0</div>
             </div>
 
             <div class="nav-section-label">WORKSPACE</div>
@@ -47,7 +56,7 @@
                 <a href="/splits" class="nav-item {{if eq .ActivePage "splits"}}active{{end}}">
                     <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     <span class="nav-label">Split-Bills</span>
-                    <span class="nav-badge nav-badge-cyan">NEW</span>
+                    <span class="nav-badge nav-badge-cyan">SPLIT</span>
                 </a>
                 <a href="/networth" class="nav-item {{if eq .ActivePage "networth"}}active{{end}}">
                     <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
@@ -90,7 +99,7 @@
                     <div class="user-avatar {{if .IsAdmin}}avatar-admin{{end}}">{{if .Username}}{{initial .Username}}{{else}}U{{end}}</div>
                     <div class="user-info">
                         <div class="user-name">{{if .Username}}{{.Username}}{{else}}User{{end}}</div>
-                        <div class="user-role">{{if .IsAdmin}}Platform Admin{{else}}{{.CurrencyCode}} Workspace{{end}}</div>
+                        <div class="user-role">{{if .IsAdmin}}Platform Owner{{else}}{{.CurrencyCode}} Workspace{{end}}</div>
                     </div>
                     <svg class="gear-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </div>
@@ -109,14 +118,14 @@
             </div>
             {{end}}
 
-            <!-- Topbar Header with 1-Click Live Currency Switcher -->
+            <!-- Topbar Header -->
             <header class="topbar">
                 <div class="topbar-left">
                     <div class="topbar-title-row">
                         <button class="btn-mobile-menu" onclick="toggleMobileSidebar()" aria-label="Toggle Menu">&#9776;</button>
                         <h1 class="page-title">{{.Title}}</h1>
                     </div>
-                    <span class="system-time"><span class="status-indicator"></span> Live Terminal • {{.CurrentDate}} • Display: <strong>{{.CurrencySymbol}} {{.CurrencyCode}}</strong>{{if .IsAdmin}} • <strong class="text-warning">Admin Mode</strong>{{end}}</span>
+                    <span class="system-time"><span class="status-indicator"></span> Live Terminal • {{.CurrentDate}} • Display: <strong>{{.CurrencySymbol}} {{.CurrencyCode}}</strong></span>
                 </div>
                 <div class="topbar-right">
                     <!-- 1-Click Live Currency Swap -->
@@ -127,9 +136,9 @@
                         <button type="submit" name="currency" value="GBP" class="curr-btn {{if eq .CurrencyCode "GBP"}}active{{end}}">£ GBP</button>
                     </form>
 
+                    <button class="btn btn-icon-pill btn-studio-trigger" onclick="openStudioDrawer()" title="Personalize Theme, Matrix Grid & Glow">🎨 Studio</button>
                     <button class="btn btn-icon-pill" onclick="openCommandPalette()" title="Quick Command Palette (Ctrl+K)">⌘K</button>
                     <button class="btn btn-icon-pill" onclick="openFXModal()" title="Live FX Calculator">💱 FX</button>
-                    <button class="btn btn-icon-pill" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle Dark/Light Grid"><span id="themeIcon">☀️</span></button>
                     <button class="btn btn-secondary-sm" onclick="openReceiptModal()">📷 AI Scan</button>
                     <button class="btn btn-primary-sm" onclick="openAddTxModal()">+ New Entry</button>
                 </div>
@@ -143,12 +152,97 @@
         </main>
     </div>
 
+    <!-- Personalization Studio Slide-Over Drawer -->
+    <div class="studio-backdrop" id="studioBackdrop" onclick="closeStudioDrawer()"></div>
+    <aside class="studio-drawer" id="studioDrawer" aria-label="Personalization Studio">
+        <div class="studio-head">
+            <div>
+                <h3 style="font-family:var(--font-display); font-size:1.08rem;">🎨 Personalization Studio</h3>
+                <p class="subtitle">Tailor colors, matrix grid, glow aura &amp; motto</p>
+            </div>
+            <button class="modal-close" onclick="closeStudioDrawer()">&times;</button>
+        </div>
+        <div class="studio-body">
+            <!-- 6 Luxury Color Palettes -->
+            <div>
+                <div class="studio-section-title">Color Theme &amp; Accent Aura</div>
+                <div class="theme-swatch-grid">
+                    <button type="button" class="theme-swatch" data-set-theme="cyber" onclick="setThemePalette('cyber')">
+                        <span class="swatch-dot" style="background:linear-gradient(135deg,#00f5a0,#00d9f5);"></span>
+                        <span>Cyber Mint</span>
+                    </button>
+                    <button type="button" class="theme-swatch" data-set-theme="gold" onclick="setThemePalette('gold')">
+                        <span class="swatch-dot" style="background:linear-gradient(135deg,#f5b942,#fb923c);"></span>
+                        <span>Solar Gold</span>
+                    </button>
+                    <button type="button" class="theme-swatch" data-set-theme="arctic" onclick="setThemePalette('arctic')">
+                        <span class="swatch-dot" style="background:linear-gradient(135deg,#38bdf8,#60a5fa);"></span>
+                        <span>Arctic Ice</span>
+                    </button>
+                    <button type="button" class="theme-swatch" data-set-theme="crimson" onclick="setThemePalette('crimson')">
+                        <span class="swatch-dot" style="background:linear-gradient(135deg,#fb7185,#f97316);"></span>
+                        <span>Crimson Heat</span>
+                    </button>
+                    <button type="button" class="theme-swatch" data-set-theme="aurora" onclick="setThemePalette('aurora')">
+                        <span class="swatch-dot" style="background:linear-gradient(135deg,#2dd4bf,#f472b6);"></span>
+                        <span>Aurora Prism</span>
+                    </button>
+                    <button type="button" class="theme-swatch" data-set-theme="frost" onclick="setThemePalette('frost')">
+                        <span class="swatch-dot" style="background:linear-gradient(135deg,#f2f6f7,#059669);"></span>
+                        <span>Saké Frost</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4 Matrix Grid Styles -->
+            <div>
+                <div class="studio-section-title">Background Matrix Grid</div>
+                <div class="pattern-grid">
+                    <button type="button" class="studio-opt-btn" data-set-grid="blueprint" onclick="setMatrixPattern('blueprint')">⊞ Blueprint Grid</button>
+                    <button type="button" class="studio-opt-btn" data-set-grid="dots" onclick="setMatrixPattern('dots')">⁘ Dot Matrix</button>
+                    <button type="button" class="studio-opt-btn" data-set-grid="mesh" onclick="setMatrixPattern('mesh')">✦ Aurora Mesh</button>
+                    <button type="button" class="studio-opt-btn" data-set-grid="clean" onclick="setMatrixPattern('clean')">◻ Pure Matte</button>
+                </div>
+            </div>
+
+            <!-- 3 Glow Intensity Levels -->
+            <div>
+                <div class="studio-section-title">Glow &amp; Spotlight Bloom</div>
+                <div class="studio-pill-row">
+                    <button type="button" class="studio-opt-btn" data-set-glow="subtle" onclick="setGlowLevel('subtle')">Subtle</button>
+                    <button type="button" class="studio-opt-btn" data-set-glow="vibrant" onclick="setGlowLevel('vibrant')">Vibrant</button>
+                    <button type="button" class="studio-opt-btn" data-set-glow="neon" onclick="setGlowLevel('neon')">Neon</button>
+                </div>
+            </div>
+
+            <!-- Layout Density -->
+            <div>
+                <div class="studio-section-title">Bento Grid Density</div>
+                <div class="pattern-grid">
+                    <button type="button" class="studio-opt-btn" data-set-density="comfortable" onclick="setDensityMode('comfortable')">Comfortable</button>
+                    <button type="button" class="studio-opt-btn" data-set-density="compact" onclick="setDensityMode('compact')">Compact Pro</button>
+                </div>
+            </div>
+
+            <!-- Personal Focus Motto -->
+            <div>
+                <div class="studio-section-title">Your Personal Wealth Motto</div>
+                <div class="form-group" style="margin-bottom:0.5rem;">
+                    <input type="text" id="studioMottoInput" class="form-control" placeholder="e.g. Building ₹1 Cr Net Worth by 2028" oninput="savePersonalMotto(this.value)">
+                </div>
+                <span class="text-muted text-sm">Displayed on your Command Center greeting banner.</span>
+            </div>
+
+            <button type="button" class="btn btn-secondary btn-block" onclick="resetStudioDefaults()">↺ Reset Studio Defaults</button>
+        </div>
+    </aside>
+
     <!-- Command Palette Modal (Ctrl+K) -->
     <div class="modal-backdrop" id="commandPaletteModal">
         <div class="modal-card cmd-card">
             <div class="cmd-search-row">
                 <span>🔍</span>
-                <input type="text" id="cmdSearchInput" class="cmd-input" placeholder="Jump to page or action (e.g. goals, csv, fx, inr)..." oninput="filterCommandPalette(this.value)">
+                <input type="text" id="cmdSearchInput" class="cmd-input" placeholder="Jump to page, theme, or action (e.g. studio, splits, net worth, inr)..." oninput="filterCommandPalette(this.value)">
                 <kbd class="cmd-kbd">ESC</kbd>
             </div>
             <div class="cmd-list" id="cmdList"></div>
@@ -228,7 +322,7 @@
         </div>
     </div>
 
-    <!-- Add Transaction Modal (Defaults to INR & UPI) -->
+    <!-- Add Transaction Modal -->
     <div class="modal-backdrop" id="addTxModal">
         <div class="modal-card">
             <div class="modal-header">
@@ -307,7 +401,7 @@
                         <label>Signed in as</label>
                         <div class="settings-identity">
                             <strong>{{.Username}}</strong>
-                            {{if .IsAdmin}}<span class="badge badge-warning">OWNER</span>{{end}}
+                            <span class="badge {{if .IsAdmin}}badge-warning{{else}}badge-primary{{end}}">{{if .IsAdmin}}OWNER{{else}}MEMBER{{end}}</span>
                         </div>
                     </div>
                     <div class="form-group">
@@ -326,7 +420,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="toggleSettingsModal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleSettingsModal(); openStudioDrawer();">🎨 Open Studio</button>
                     <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
@@ -335,6 +429,7 @@
 
     <script>
         window.__PM_IS_ADMIN = {{if .IsAdmin}}true{{else}}false{{end}};
+        window.__PM_USER = "{{.Username}}";
         window.__PM_CURRENCY = {
             code: "{{.CurrencyCode}}",
             symbol: "{{.CurrencySymbol}}",
